@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="description" content="App privada de pádel para seguimiento de niveles, partidos y clasificación entre amigos." />
+  <link rel="canonical" href="https://appweb-padel.vercel.app/" />
+  <title>PádelRank · Tu círculo de pádel</title>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand:   { 50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 800: '#9a3412', 900: '#7c2d12' },
+            surface: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 850: '#172032', 900: '#0f172a', 950: '#080e1a' },
+            accent:  '#f97316',
+            gold:    '#fbbf24',
+            silver:  '#94a3b8',
+            bronze:  '#cd7c2e',
+          },
+          backgroundImage: {
+            'card-gradient': 'linear-gradient(135deg, #1e293b 0%, #172032 50%, #0f172a 100%)',
+            'hero-gradient': 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)',
+            'glass': 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+          },
+          boxShadow: {
+            'card':  '0 4px 24px rgba(0,0,0,0.4)',
+            'hero':  '0 8px 40px rgba(249,115,22,0.35)',
+            'glow':  '0 0 20px rgba(249,115,22,0.4)',
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4,0,0.6,1) infinite',
+            'fade-in':    'fadeIn 0.5s ease-out',
+            'slide-up':   'slideUp 0.4s ease-out',
+          },
+          keyframes: {
+            fadeIn:  { from: { opacity: 0 }, to: { opacity: 1 } },
+            slideUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { background-color: #080e1a; font-family: 'Inter', sans-serif; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 4px; }
+
+    /* Glass card */
+    .glass-card {
+      background: linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(249,115,22,0.15);
+    }
+
+    /* Level badge */
+    .level-badge {
+      background: linear-gradient(135deg, #ea580c, #f97316, #fb923c);
+      box-shadow: 0 0 30px rgba(249,115,22,0.5);
+    }
+
+    /* Input */
+    .form-input {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(249,115,22,0.2);
+      color: white;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+    }
+    .form-input::placeholder { color: #475569; }
+
+    /* Btn primary */
+    .btn-primary {
+      background: linear-gradient(135deg, #ea580c, #f97316);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 20px rgba(249,115,22,0.5); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Nav icon active */
+    .nav-item.active .nav-icon { color: #f97316; }
+    .nav-item.active .nav-label { color: #f97316; }
+
+    /* Rank positions */
+    .rank-1 { background: linear-gradient(90deg, rgba(251,191,36,0.15), transparent); border-left: 3px solid #fbbf24; }
+    .rank-2 { background: linear-gradient(90deg, rgba(148,163,184,0.1), transparent); border-left: 3px solid #94a3b8; }
+    .rank-3 { background: linear-gradient(90deg, rgba(205,124,46,0.12), transparent); border-left: 3px solid #cd7c2e; }
+
+    /* Trend arrows */
+    .trend-up   { color: #4ade80; }
+    .trend-down { color: #f87171; }
+    .trend-flat { color: #64748b; }
+
+    /* Racha indicator */
+    .racha-positive { background: linear-gradient(90deg, rgba(74,222,128,0.15), transparent); }
+    .racha-negative { background: linear-gradient(90deg, rgba(248,113,113,0.15), transparent); }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #1e293b 25%, #2d3f5c 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Tabs */
+    .tab-active {
+      background: rgba(249,115,22,0.15);
+      color: #f97316;
+      border-bottom: 2px solid #f97316;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen text-white">
+
+  <!-- ============================================================
+       PANTALLA DE LOGIN / REGISTRO
+  ============================================================ -->
+  <div id="authScreen" class="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fade-in">
+
+    <!-- Logo hero -->
+    <div class="mb-10 text-center">
+      <div class="inline-flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl level-badge flex items-center justify-center text-2xl font-black shadow-hero">
+          🏓
+        </div>
+        <span class="text-3xl font-black tracking-tight">Pádel<span class="text-brand-500">Rank</span></span>
+      </div>
+      <p class="text-surface-400 text-sm">El ranking privado de tu grupo</p>
+    </div>
+
+    <!-- Auth card -->
+    <div class="glass-card rounded-3xl p-8 w-full max-w-sm shadow-card animate-slide-up">
+
+      <!-- Tabs Login / Registro -->
+      <div class="flex rounded-xl overflow-hidden mb-6 border border-surface-700">
+        <button id="tabLogin" onclick="switchTab('login')"
+          class="flex-1 py-2.5 text-sm font-semibold transition-all tab-active" id="tabLogin">
+          Iniciar sesión
+        </button>
+        <button id="tabRegister" onclick="switchTab('register')"
+          class="flex-1 py-2.5 text-sm font-semibold transition-all text-surface-400 hover:text-white">
+          Registrarse
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Email</label>
+          <input type="email" id="loginEmail" placeholder="tu@email.com"
+            class="form-input w-full rounded-xl px-4 py-3 text-sm" required />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Contraseña</label>
+          <input type="password" id="loginPassword" placeholder="••••••••"
+            class="form-input w-full rounded-xl px-4 py-3 text-sm" required />
+        </div>
+        <button type="submit" id="loginBtn"
+          class="btn-primary w-full rounded-xl py-3.5 text-sm font-bold mt-2 flex items-center justify-center gap-2">
+          <span id="loginBtnText">Entrar</span>
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Nombre</label>
+          <input type="text" id="regName" placeholder="Tu nombre"
+            class="form-input w-full rounded-xl px-4 py-3 text-sm" required />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Email</label>
+          <input type="email" id="regEmail" placeholder="tu@email.com"
+            class="form-input w-full rounded-xl px-4 py-3 text-sm" required />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Contraseña</label>
+          <input type="password" id="regPassword" placeholder="Mín. 6 caracteres"
+            class="form-input w-full rounded-xl px-4 py-3 text-sm" required minlength="6" />
+        </div>
+        <button type="submit" id="regBtn"
+          class="btn-primary w-full rounded-xl py-3.5 text-sm font-bold mt-2 flex items-center justify-center gap-2">
+          <span id="regBtnText">Crear cuenta</span>
+        </button>
+      </form>
+
+      <!-- Error / Success message -->
+      <div id="authMessage" class="mt-4 hidden text-sm text-center rounded-xl px-4 py-3"></div>
+    </div>
+
+    <p class="mt-8 text-xs text-surface-600 text-center">© 2025 PádelRank · App privada</p>
+  </div>
+
+  <!-- ============================================================
+       APP PRINCIPAL (post-login)
+  ============================================================ -->
+  <div id="appScreen" class="hidden min-h-screen flex flex-col max-w-md mx-auto pb-24">
+
+    <!-- ——— HEADER ——— -->
+    <header class="sticky top-0 z-40 glass-card border-b border-surface-800 px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl level-badge flex items-center justify-center text-sm font-black">🏓</div>
+        <span class="font-black text-lg tracking-tight">Pádel<span class="text-brand-500">Rank</span></span>
+      </div>
+      <button onclick="handleLogout()" class="text-surface-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Salir
+      </button>
+    </header>
+
+    <!-- ——— SECCIÓN: PERFIL ——— -->
+    <section id="sectionPerfil" class="flex-1 px-4 pt-5 space-y-4 animate-fade-in">
+
+      <!-- Hero card del jugador -->
+      <div class="glass-card rounded-3xl overflow-hidden shadow-card">
+        <!-- Franja superior con gradiente -->
+        <div class="h-2 bg-hero-gradient"></div>
+
+        <div class="p-6">
+          <!-- Avatar + nombre -->
+          <div class="flex items-center gap-4 mb-5">
+            <div id="profileAvatar" class="w-16 h-16 rounded-2xl level-badge flex items-center justify-center text-2xl font-black text-white shadow-hero flex-shrink-0">
+              ?
+            </div>
+            <div class="min-w-0">
+              <h1 id="profileName" class="text-xl font-black truncate">Cargando…</h1>
+              <p id="profileEmail" class="text-surface-400 text-xs truncate">—</p>
+              <div id="profileBadge" class="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-brand-600/20 border border-brand-500/30 text-brand-400 text-xs font-bold">
+                🏆 Calculando nivel…
+              </div>
+            </div>
+          </div>
+
+          <!-- Nivel grande -->
+          <div class="flex items-end justify-between mb-4">
+            <div>
+              <p class="text-surface-400 text-xs font-semibold uppercase tracking-widest mb-1">Nivel actual</p>
+              <div class="flex items-baseline gap-2">
+                <span id="profileLevel" class="text-6xl font-black text-transparent bg-clip-text bg-hero-gradient">—</span>
+                <span class="text-surface-400 text-sm">/ 7.00</span>
+              </div>
+            </div>
+            <!-- Racha -->
+            <div id="rachaContainer" class="text-right">
+              <p class="text-surface-400 text-xs font-semibold uppercase tracking-widest mb-1">Racha</p>
+              <div id="rachaDisplay" class="text-2xl font-black">—</div>
+              <p class="text-surface-500 text-xs" id="rachaLabel">partidos</p>
+            </div>
+          </div>
+
+          <!-- Barra de progreso de nivel -->
+          <div class="mb-5">
+            <div class="flex justify-between text-xs text-surface-500 mb-1.5">
+              <span>Progreso de nivel</span>
+              <span id="progressText">—</span>
+            </div>
+            <div class="h-2 bg-surface-800 rounded-full overflow-hidden">
+              <div id="levelProgress" class="h-full bg-hero-gradient rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Stats grid -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-surface-800/60 rounded-2xl p-3 text-center">
+              <p class="text-2xl font-black" id="statPartidos">—</p>
+              <p class="text-surface-400 text-xs mt-0.5">Partidos</p>
+            </div>
+            <div class="bg-surface-800/60 rounded-2xl p-3 text-center border border-green-500/20">
+              <p class="text-2xl font-black text-green-400" id="statVictorias">—</p>
+              <p class="text-surface-400 text-xs mt-0.5">Victorias</p>
+            </div>
+            <div class="bg-surface-800/60 rounded-2xl p-3 text-center border border-red-500/20">
+              <p class="text-2xl font-black text-red-400" id="statDerrotas">—</p>
+              <p class="text-surface-400 text-xs mt-0.5">Derrotas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos partidos -->
+      <div class="glass-card rounded-3xl p-5 shadow-card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold text-base">Últimos partidos</h2>
+          <span class="text-xs text-surface-500">Historial</span>
+        </div>
+        <div id="historialPartidos" class="space-y-2">
+          <div class="skeleton h-14"></div>
+          <div class="skeleton h-14"></div>
+          <div class="skeleton h-14"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ——— SECCIÓN: RANKING ——— -->
+    <section id="sectionRanking" class="hidden flex-1 px-4 pt-5 animate-fade-in">
+
+      <div class="glass-card rounded-3xl overflow-hidden shadow-card">
+        <!-- Header del ranking -->
+        <div class="p-5 border-b border-surface-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center text-xl">🏆</div>
+            <div>
+              <h2 class="font-bold text-base">Clasificación</h2>
+              <p class="text-surface-400 text-xs">Tu grupo de pádel</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Podio TOP 3 -->
+        <div class="p-5 border-b border-surface-800">
+          <div id="podio" class="flex items-end justify-center gap-3">
+            <div class="skeleton h-24 w-20 rounded-2xl"></div>
+            <div class="skeleton h-32 w-20 rounded-2xl"></div>
+            <div class="skeleton h-20 w-20 rounded-2xl"></div>
+          </div>
+        </div>
+
+        <!-- Lista ranking -->
+        <div id="rankingList" class="divide-y divide-surface-800">
+          <div class="p-4 skeleton h-16 m-3 rounded-xl"></div>
+          <div class="p-4 skeleton h-16 m-3 rounded-xl"></div>
+          <div class="p-4 skeleton h-16 m-3 rounded-xl"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ——— SECCIÓN: NUEVO PARTIDO ——— -->
+    <section id="sectionPartido" class="hidden flex-1 px-4 pt-5 animate-fade-in">
+
+      <div class="glass-card rounded-3xl overflow-hidden shadow-card">
+        <div class="h-2 bg-hero-gradient"></div>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center text-xl">⚡</div>
+            <div>
+              <h2 class="font-bold text-base">Registrar partido</h2>
+              <p class="text-surface-400 text-xs">Los niveles se actualizan al instante</p>
+            </div>
+          </div>
+
+          <form id="partidoForm" onsubmit="handleGuardarPartido(event)" class="space-y-5">
+
+            <!-- Fecha -->
+            <div>
+              <label class="block text-xs font-semibold text-surface-400 uppercase tracking-widest mb-2">Fecha</label>
+              <input type="date" id="pFecha" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+            </div>
+
+            <!-- Equipo ganador -->
+            <div class="bg-green-500/5 border border-green-500/20 rounded-2xl p-4">
+              <p class="text-green-400 text-xs font-bold uppercase tracking-widest mb-3">🏆 Equipo Ganador</p>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Jugador 1</label>
+                  <select id="pGanador1" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+                    <option value="">Seleccionar jugador…</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Jugador 2</label>
+                  <select id="pGanador2" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+                    <option value="">Seleccionar jugador…</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Sets ganados (ej: 6-3, 7-5)</label>
+                  <input type="text" id="pSetsGan" placeholder="6-3, 7-5"
+                    class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Equipo perdedor -->
+            <div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-4">
+              <p class="text-red-400 text-xs font-bold uppercase tracking-widest mb-3">💔 Equipo Perdedor</p>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Jugador 1</label>
+                  <select id="pPerdedor1" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+                    <option value="">Seleccionar jugador…</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Jugador 2</label>
+                  <select id="pPerdedor2" class="form-input w-full rounded-xl px-4 py-3 text-sm">
+                    <option value="">Seleccionar jugador…</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-surface-400 mb-1.5">Sets perdidos (ej: 3-6, 5-7)</label>
+                  <input type="text" id="pSetsPer" placeholder="3-6, 5-7"
+                    class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview delta -->
+            <div id="deltaPreview" class="bg-brand-600/10 border border-brand-500/20 rounded-2xl p-4 hidden">
+              <p class="text-brand-400 text-xs font-bold uppercase tracking-widest mb-1">Cambio de nivel estimado</p>
+              <p class="text-2xl font-black" id="deltaValue">±0.10</p>
+              <p class="text-surface-500 text-xs mt-1" id="deltaDesc">—</p>
+            </div>
+
+            <button type="submit" id="guardarBtn"
+              class="btn-primary w-full rounded-xl py-4 text-sm font-bold flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span id="guardarBtnText">Guardar partido</span>
+            </button>
+          </form>
+
+          <!-- Mensaje resultado -->
+          <div id="partidoMsg" class="mt-4 hidden text-sm text-center rounded-xl px-4 py-3"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ——— BOTTOM NAVIGATION ——— -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50">
+      <div class="glass-card border-t border-surface-800 px-4 py-3">
+        <div class="flex justify-around items-center">
+
+          <button onclick="showSection('perfil')" id="navPerfil"
+            class="nav-item active flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all">
+            <svg class="nav-icon w-5 h-5 text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span class="nav-label text-xs font-semibold text-brand-500">Perfil</span>
+          </button>
+
+          <button onclick="showSection('ranking')" id="navRanking"
+            class="nav-item flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all">
+            <svg class="nav-icon w-5 h-5 text-surface-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span class="nav-label text-xs font-semibold text-surface-500">Ranking</span>
+          </button>
+
+          <!-- FAB central -->
+          <button onclick="showSection('partido')" id="navPartido"
+            class="relative -mt-8 w-14 h-14 level-badge rounded-2xl flex items-center justify-center shadow-hero transition-all hover:scale-105 active:scale-95">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-surface-400 whitespace-nowrap">Partido</span>
+          </button>
+
+          <button onclick="showSection('estadisticas')" id="navEstadisticas"
+            class="nav-item flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all">
+            <svg class="nav-icon w-5 h-5 text-surface-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+            <span class="nav-label text-xs font-semibold text-surface-500">Stats</span>
+          </button>
+
+          <button onclick="handleLogout()" id="navSalir"
+            class="nav-item flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all">
+            <svg class="nav-icon w-5 h-5 text-surface-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span class="nav-label text-xs font-semibold text-surface-500">Salir</span>
+          </button>
+
+        </div>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT — LÓGICA COMPLETA
+  ============================================================ -->
+  <script>
+  // ================================================================
+  // CONFIGURACIÓN — REEMPLAZA CON TUS DATOS DE SUPABASE
+  // ================================================================
+  const SUPABASE_URL  = 'https://qinxaemwhjiiuehkgrge.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpbnhhZW13aGppaXVlaGtncmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMzIyNjMsImV4cCI6MjA5ODkwODI2M30.bz5XP3IKOrEEyMuayzP_srZS6RfzkZuYWGbz8j3qNy8';
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ================================================================
+  // ESTADO GLOBAL
+  // ================================================================
+  let currentUser    = null;
+  let currentProfile = null;
+  let allPlayers     = [];
+  let allPartidos    = [];
+
+  // ================================================================
+  // UTILIDADES
+  // ================================================================
+  function getLevelLabel(nivel) {
+    if (nivel < 1.5) return { label: 'Iniciación', emoji: '🌱' };
+    if (nivel < 2.0) return { label: 'Categoría 9', emoji: '⚪' };
+    if (nivel < 2.5) return { label: 'Categoría 8', emoji: '🔵' };
+    if (nivel < 3.0) return { label: 'Categoría 7', emoji: '🟡' };
+    if (nivel < 3.5) return { label: 'Categoría 6', emoji: '🟠' };
+    if (nivel < 4.0) return { label: 'Categoría 5', emoji: '🔴' };
+    if (nivel < 4.5) return { label: 'Categoría 4', emoji: '🟣' };
+    if (nivel < 5.0) return { label: 'Categoría 3', emoji: '⚫' };
+    if (nivel < 6.0) return { label: 'Primera', emoji: '🥇' };
+    return { label: 'Élite', emoji: '👑' };
+  }
+
+  function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  function getRachaDisplay(racha) {
+    if (racha > 0)  return { text: `🔥 +${racha}`, class: 'trend-up',   label: 'victorias seguidas' };
+    if (racha < 0)  return { text: `❄️ ${racha}`,  class: 'trend-down', label: 'derrotas seguidas'  };
+    return                 { text: `— 0`,           class: 'trend-flat', label: 'sin racha'          };
+  }
+
+  function showMessage(elId, msg, type = 'error') {
+    const el = document.getElementById(elId);
+    el.textContent = msg;
+    el.className = `mt-4 text-sm text-center rounded-xl px-4 py-3 ${
+      type === 'success' ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+                         : 'bg-red-500/10 border border-red-500/30 text-red-400'
+    }`;
+    el.classList.remove('hidden');
+    if (type === 'success') setTimeout(() => el.classList.add('hidden'), 4000);
+  }
+
+  // Fórmula Elo adaptada para el frontend (preview)
+  function calcularDelta(nivelGan, nivelPer) {
+    const K = 0.20;
+    const expected = 1.0 / (1.0 + Math.pow(10, (nivelPer - nivelGan) / 2.0));
+    let delta = K * (1 - expected);
+    delta = Math.max(0.05, Math.min(0.20, delta));
+    return Math.round(delta * 100) / 100;
+  }
+
+  // ================================================================
+  // AUTENTICACIÓN
+  // ================================================================
+  function switchTab(tab) {
+    const loginForm   = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const tabLogin    = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+
+    document.getElementById('authMessage').classList.add('hidden');
+
+    if (tab === 'login') {
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      tabLogin.className    = 'flex-1 py-2.5 text-sm font-semibold transition-all tab-active';
+      tabRegister.className = 'flex-1 py-2.5 text-sm font-semibold transition-all text-surface-400 hover:text-white';
+    } else {
+      loginForm.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+      tabLogin.className    = 'flex-1 py-2.5 text-sm font-semibold transition-all text-surface-400 hover:text-white';
+      tabRegister.className = 'flex-1 py-2.5 text-sm font-semibold transition-all tab-active';
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn  = document.getElementById('loginBtn');
+    const text = document.getElementById('loginBtnText');
+    btn.disabled = true;
+    text.textContent = 'Entrando…';
+
+    const { error } = await sb.auth.signInWithPassword({
+      email:    document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value,
+    });
+
+    if (error) {
+      showMessage('authMessage', error.message === 'Invalid login credentials'
+        ? 'Email o contraseña incorrectos.' : error.message);
+    }
+    btn.disabled = false;
+    text.textContent = 'Entrar';
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn  = document.getElementById('regBtn');
+    const text = document.getElementById('regBtnText');
+    btn.disabled = true;
+    text.textContent = 'Creando cuenta…';
+
+    const { error } = await sb.auth.signUp({
+      email:    document.getElementById('regEmail').value.trim(),
+      password: document.getElementById('regPassword').value,
+      options:  { data: { full_name: document.getElementById('regName').value.trim() } },
+    });
+
+    if (error) {
+      showMessage('authMessage', error.message);
+    } else {
+      showMessage('authMessage', '✅ Cuenta creada. Revisa tu email para confirmarla.', 'success');
+    }
+    btn.disabled = false;
+    text.textContent = 'Crear cuenta';
+  }
+
+  async function handleLogout() {
+    await sb.auth.signOut();
+    currentUser = null; currentProfile = null;
+    showAuth();
+  }
+
+  // ================================================================
+  // CARGA DE DATOS
+  // ================================================================
+  async function loadProfile(userId) {
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) { console.error('loadProfile:', error); return; }
+    currentProfile = data;
+    renderProfile(data);
+  }
+
+  async function loadAllPlayers() {
+    const { data, error } = await sb
+      .from('profiles')
+      .select('id, full_name, email, nivel')
+      .order('nivel', { ascending: false });
+
+    if (error) { console.error('loadAllPlayers:', error); return; }
+    allPlayers = data || [];
+    populatePlayerSelects();
+  }
+
+  async function loadRanking() {
+    const { data, error } = await sb
+      .from('ranking')
+      .select('*')
+      .order('posicion');
+
+    if (error) { console.error('loadRanking:', error); return; }
+    renderRanking(data || []);
+  }
+
+  async function loadHistorial(userId) {
+    const { data, error } = await sb
+      .from('partidos')
+      .select('*')
+      .or(`ganador_1_id.eq.${userId},ganador_2_id.eq.${userId},perdedor_1_id.eq.${userId},perdedor_2_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) { console.error('loadHistorial:', error); return; }
+    allPartidos = data || [];
+    renderHistorial(data || [], userId);
+  }
+
+  // ================================================================
+  // RENDERIZADO
+  // ================================================================
+  function renderProfile(p) {
+    const ini     = getInitials(p.full_name || p.email);
+    const lvl     = getLevelLabel(p.nivel);
+    const racha   = getRachaDisplay(p.racha);
+    const lvlNum  = parseFloat(p.nivel);
+    const progPct = ((lvlNum - 1) / 6) * 100;
+
+    document.getElementById('profileAvatar').textContent   = ini;
+    document.getElementById('profileName').textContent     = p.full_name || p.email;
+    document.getElementById('profileEmail').textContent    = p.email;
+    document.getElementById('profileBadge').textContent    = `${lvl.emoji} ${lvl.label}`;
+    document.getElementById('profileLevel').textContent    = lvlNum.toFixed(2);
+    document.getElementById('statPartidos').textContent    = p.partidos;
+    document.getElementById('statVictorias').textContent   = p.victorias;
+    document.getElementById('statDerrotas').textContent    = p.derrotas;
+    document.getElementById('rachaDisplay').textContent    = racha.text;
+    document.getElementById('rachaDisplay').className      = `text-2xl font-black ${racha.class}`;
+    document.getElementById('rachaLabel').textContent      = racha.label;
+    document.getElementById('levelProgress').style.width   = `${Math.min(100, progPct)}%`;
+    document.getElementById('progressText').textContent    = `${lvlNum.toFixed(2)} → ${Math.min(7, Math.ceil(lvlNum * 2) / 2).toFixed(2)}`;
+  }
+
+  function renderHistorial(partidos, userId) {
+    const el = document.getElementById('historialPartidos');
+    if (!partidos.length) {
+      el.innerHTML = `<div class="text-center py-8 text-surface-500 text-sm">No hay partidos registrados aún</div>`;
+      return;
+    }
+
+    el.innerHTML = partidos.map(p => {
+      const gane  = p.ganador_1_id === userId || p.ganador_2_id === userId;
+      const date  = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      const delta = parseFloat(p.delta_nivel || 0);
+      const sign  = gane ? `+${delta.toFixed(2)}` : `-${delta.toFixed(2)}`;
+      const clr   = gane ? 'text-green-400' : 'text-red-400';
+      const sets  = gane ? p.sets_ganadores : p.sets_perdedores;
+      const res   = gane ? '🏆 Victoria' : '💔 Derrota';
+
+      return `
+        <div class="flex items-center justify-between p-3 rounded-xl bg-surface-800/40 border border-surface-700/30">
+          <div class="flex items-center gap-3">
+            <div class="text-lg">${gane ? '🏆' : '💔'}</div>
+            <div>
+              <p class="text-sm font-semibold">${res}</p>
+              <p class="text-surface-500 text-xs">${date} · Sets: ${sets || '—'}</p>
+            </div>
+          </div>
+          <span class="font-bold text-sm ${clr}">${sign}</span>
+        </div>`;
+    }).join('');
+  }
+
+  function renderRanking(players) {
+    // PODIO
+    const podioEl = document.getElementById('podio');
+    const top3    = players.slice(0, 3);
+    const order   = [top3[1], top3[0], top3[2]].filter(Boolean); // 2-1-3 visual
+    const heights = ['h-28', 'h-36', 'h-24'];
+    const medals  = ['🥈', '🥇', '🥉'];
+    const borders = ['border-silver/30', 'border-gold/40', 'border-bronze/30'];
+    const texts   = ['text-silver', 'text-gold', 'text-bronze'];
+
+    podioEl.innerHTML = order.map((p, i) => `
+      <div class="flex flex-col items-center gap-2">
+        <div class="text-2xl">${medals[i]}</div>
+        <div class="${heights[i]} w-20 bg-surface-800 border ${borders[i]} rounded-2xl flex flex-col items-center justify-end pb-3 px-2">
+          <p class="text-lg font-black ${texts[i]}">${parseFloat(p.nivel).toFixed(2)}</p>
+          <p class="text-surface-300 text-xs text-center truncate w-full font-semibold">${(p.full_name || p.email).split(' ')[0]}</p>
+        </div>
+      </div>`
+    ).join('');
+
+    // LISTA
+    const rankEl = document.getElementById('rankingList');
+    rankEl.innerHTML = players.map((p, idx) => {
+      const posClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+      const isMe     = currentUser && p.id === currentUser.id;
+      const racha    = getRachaDisplay(p.racha || 0);
+      const lvl      = getLevelLabel(p.nivel);
+      const wPct     = p.partidos > 0 ? Math.round((p.victorias / p.partidos) * 100) : 0;
+
+      return `
+        <div class="flex items-center gap-3 px-5 py-3.5 ${posClass} ${isMe ? 'bg-brand-600/10 border-l-brand-500' : ''}">
+          <!-- Posición -->
+          <div class="w-7 text-center font-black text-sm ${idx < 3 ? ['text-gold','text-silver','text-bronze'][idx] : 'text-surface-500'}">
+            ${idx < 3 ? ['🥇','🥈','🥉'][idx] : `#${p.posicion}`}
+          </div>
+          <!-- Avatar -->
+          <div class="w-10 h-10 rounded-xl level-badge flex items-center justify-center text-sm font-black flex-shrink-0 text-xs">
+            ${getInitials(p.full_name || p.email)}
+          </div>
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <p class="font-semibold text-sm truncate ${isMe ? 'text-brand-400' : ''}">${p.full_name || p.email} ${isMe ? '(tú)' : ''}</p>
+            </div>
+            <p class="text-surface-500 text-xs">${lvl.emoji} ${lvl.label} · ${wPct}% victorias</p>
+          </div>
+          <!-- Nivel + racha -->
+          <div class="text-right flex-shrink-0">
+            <p class="font-black text-sm">${parseFloat(p.nivel).toFixed(2)}</p>
+            <p class="text-xs ${racha.class}">${racha.text}</p>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function populatePlayerSelects() {
+    const selects = ['pGanador1','pGanador2','pPerdedor1','pPerdedor2'];
+    selects.forEach(sid => {
+      const sel = document.getElementById(sid);
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Seleccionar jugador…</option>' +
+        allPlayers.map(p => `<option value="${p.id}">${p.full_name || p.email} (${parseFloat(p.nivel).toFixed(2)})</option>`).join('');
+      sel.value = cur;
+    });
+    // Preview automático
+    selects.forEach(sid => {
+      document.getElementById(sid).addEventListener('change', updateDeltaPreview);
+    });
+  }
+
+  function updateDeltaPreview() {
+    const g1 = document.getElementById('pGanador1').value;
+    const g2 = document.getElementById('pGanador2').value;
+    const p1 = document.getElementById('pPerdedor1').value;
+    const p2 = document.getElementById('pPerdedor2').value;
+
+    if (!g1 || !g2 || !p1 || !p2) {
+      document.getElementById('deltaPreview').classList.add('hidden');
+      return;
+    }
+
+    const getLevel = id => parseFloat(allPlayers.find(p => p.id === id)?.nivel || 1);
+    const nivelGan = (getLevel(g1) + getLevel(g2)) / 2;
+    const nivelPer = (getLevel(p1) + getLevel(p2)) / 2;
+    const delta    = calcularDelta(nivelGan, nivelPer);
+
+    document.getElementById('deltaPreview').classList.remove('hidden');
+    document.getElementById('deltaValue').textContent = `±${delta.toFixed(2)}`;
+    document.getElementById('deltaDesc').textContent  =
+      `Ganadores +${delta.toFixed(2)} · Perdedores -${delta.toFixed(2)}`;
+  }
+
+  // ================================================================
+  // GUARDAR PARTIDO
+  // ================================================================
+  async function handleGuardarPartido(e) {
+    e.preventDefault();
+    const btn  = document.getElementById('guardarBtn');
+    const text = document.getElementById('guardarBtnText');
+
+    const g1  = document.getElementById('pGanador1').value;
+    const g2  = document.getElementById('pGanador2').value;
+    const p1  = document.getElementById('pPerdedor1').value;
+    const p2  = document.getElementById('pPerdedor2').value;
+    const sG  = document.getElementById('pSetsGan').value.trim();
+    const sP  = document.getElementById('pSetsPer').value.trim();
+    const fecha = document.getElementById('pFecha').value || new Date().toISOString().split('T')[0];
+
+    // Validaciones
+    const ids = [g1, g2, p1, p2].filter(Boolean);
+    if (ids.length < 4) return showMessage('partidoMsg', 'Selecciona los 4 jugadores.');
+    if (new Set(ids).size < 4) return showMessage('partidoMsg', 'Un jugador no puede aparecer dos veces.');
+    if (!sG || !sP) return showMessage('partidoMsg', 'Introduce los sets de ambos equipos.');
+
+    btn.disabled = true;
+    text.textContent = 'Guardando…';
+
+    const { error } = await sb.from('partidos').insert({
+      fecha,
+      ganador_1_id:    g1,
+      ganador_2_id:    g2,
+      perdedor_1_id:   p1,
+      perdedor_2_id:   p2,
+      sets_ganadores:  sG,
+      sets_perdedores: sP,
+      creado_por:      currentUser.id,
+    });
+
+    if (error) {
+      showMessage('partidoMsg', `Error: ${error.message}`);
+    } else {
+      showMessage('partidoMsg', '✅ Partido guardado y niveles actualizados.', 'success');
+      document.getElementById('partidoForm').reset();
+      document.getElementById('deltaPreview').classList.add('hidden');
+      // Recargar datos
+      await loadProfile(currentUser.id);
+      await loadAllPlayers();
+    }
+
+    btn.disabled = false;
+    text.textContent = 'Guardar partido';
+  }
+
+  // ================================================================
+  // NAVEGACIÓN
+  // ================================================================
+  function showSection(name) {
+    const sections = { perfil: 'sectionPerfil', ranking: 'sectionRanking', partido: 'sectionPartido' };
+    const navs     = { perfil: 'navPerfil', ranking: 'navRanking', partido: 'navPartido' };
+
+    Object.values(sections).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+
+    const target = document.getElementById(sections[name]);
+    if (target) target.classList.remove('hidden');
+
+    // Actualizar nav
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.remove('active');
+      el.querySelectorAll('.nav-icon, .nav-label').forEach(child => {
+        child.classList.remove('text-brand-500');
+        child.classList.add('text-surface-500');
+      });
+    });
+    const activeNav = document.getElementById(navs[name]);
+    if (activeNav) {
+      activeNav.classList.add('active');
+      activeNav.querySelectorAll('.nav-icon, .nav-label').forEach(child => {
+        child.classList.add('text-brand-500');
+        child.classList.remove('text-surface-500');
+      });
+    }
+
+    // Lazy load
+    if (name === 'ranking') loadRanking();
+    if (name === 'perfil' && currentUser) {
+      loadProfile(currentUser.id);
+      loadHistorial(currentUser.id);
+    }
+  }
+
+  // ================================================================
+  // PANTALLAS
+  // ================================================================
+  function showAuth() {
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+  }
+
+  function showApp() {
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+    document.getElementById('pFecha').value = new Date().toISOString().split('T')[0];
+  }
+
+  // ================================================================
+  // INICIALIZACIÓN
+  // ================================================================
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (session?.user) {
+      currentUser = session.user;
+      showApp();
+      await loadProfile(currentUser.id);
+      await loadAllPlayers();
+      await loadHistorial(currentUser.id);
+    } else {
+      showAuth();
+    }
+
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        showApp();
+        await loadProfile(currentUser.id);
+        await loadAllPlayers();
+        await loadHistorial(currentUser.id);
+      } else if (event === 'SIGNED_OUT') {
+        showAuth();
+      }
+    });
+  }
+
+  // Arrancar
+  init().catch(console.error);
+  </script>
+
+</body>
+</html>
