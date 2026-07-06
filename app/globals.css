@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fuentes */
+  --font-kanit: var(--font-kanit);
+  --font-inter: var(--font-inter);
+
+  /* Paleta principal */
+  --color-brand-50: #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-200: #bbf7d0;
+  --color-brand-300: #86efac;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a;
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --color-brand-900: #14532d;
+
+  /* Superficies */
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+
+  /* Cyan acento */
+  --color-cyan-accent: #00a2ff;
+
+  /* Sombras */
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.10);
+  --shadow-hero: 0 8px 30px rgba(34, 197, 94, 0.20);
+  --shadow-green: 0 4px 20px rgba(34, 197, 94, 0.15);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+}
+
+h1, h2, h3, .font-kanit {
+  font-family: var(--font-kanit), 'Kanit', system-ui, sans-serif;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+
+/* Glass morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Card base */
+.card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover { box-shadow: var(--shadow-card-hover); }
+
+/* Level badge gradiente */
+.level-badge {
+  background: linear-gradient(135deg, #5eff84, #22c55e);
+  box-shadow: var(--shadow-green);
+}
+
+/* Botón primario */
+.btn-primary {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover {
+  box-shadow: var(--shadow-hero);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Botón secundario */
+.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+/* Input base */
+.input-base {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  color: #0f172a;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  outline: none;
+}
+.input-base:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+.input-base::placeholder { color: #94a3b8; }
+
+/* Ranking positions */
+.rank-1 {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.06), transparent);
+  border-left: 3px solid #fbbf24;
+}
+.rank-2 {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.06), transparent);
+  border-left: 3px solid #94a3b8;
+}
+.rank-3 {
+  background: linear-gradient(90deg, rgba(205, 124, 46, 0.06), transparent);
+  border-left: 3px solid #cd7c2e;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out; }
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.75rem;
+}
+
+/* Hero gradient */
+.hero-gradient {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+/* Nav active */
+.nav-active {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+  border-radius: 0.75rem;
+}
+
+/* Badge colors por tipo */
+.badge-partido { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-rey { background: #fefce8; color: #a16207; border: 1px solid #fde047; }
+.badge-torneo { background: #faf5ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+
+/* Status badges */
+.status-abierto { background: #f0fdf4; color: #15803d; }
+.status-lleno { background: #fef3c7; color: #92400e; }
+.status-cerrado { background: #fef2f2; color: #991b1b; }
+.status-completo { background: #ede9fe; color: #4c1d95; }

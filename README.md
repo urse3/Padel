@@ -1,119 +1,36 @@
-# 🏓 PádelRank — App privada de pádel
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-App web autocontenida para gestionar el ranking de nivel entre un grupo privado de jugadores de pádel. Diseñada para móvil, oscura, y con toda la lógica integrada en un único `index.html`.
+## Getting Started
 
----
+First, run the development server:
 
-## 🚀 Despliegue rápido (Vercel)
-
-### Opción A — Subir directamente a Vercel (sin GitHub)
-1. Ve a [vercel.com/new](https://vercel.com/new)
-2. Arrastra la carpeta `appweb padel` completa al drop-zone
-3. Vercel detecta automáticamente el `index.html` estático
-4. Haz clic en **Deploy** → listo
-
-### Opción B — Desde GitHub
-1. Sube esta carpeta a un repositorio de GitHub
-2. Conecta el repo en [vercel.com/new](https://vercel.com/new)
-3. Framework preset: **Other** (static)
-4. Deploy
-
----
-
-## 🔑 Paso obligatorio antes del deploy: Inyectar credenciales
-
-Abre `index.html` y busca esta sección (líneas ~400):
-
-```javascript
-const SUPABASE_URL  = 'https://qinxaemwhjiiuehkgrge.supabase.co';
-const SUPABASE_ANON = 'TU_ANON_KEY_AQUI';   // ← pega aquí tu Anon Key
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Sustituye `TU_ANON_KEY_AQUI` con tu **Anon Public Key**:
-- Supabase Dashboard → tu proyecto → **Project Settings** → **API**
-- La clave empieza por `eyJ...`
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-**En Vercel (modo seguro):**
-- Ve a tu proyecto en Vercel → **Settings** → **Environment Variables**
-- Pero como es un HTML estático con JS en cliente, la Anon Key va directamente en el código (es seguro, la Anon Key es pública por diseño, las políticas RLS protegen los datos)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
----
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 🗄️ Base de datos (Supabase)
+## Learn More
 
-### 1. Ejecutar el schema
+To learn more about Next.js, take a look at the following resources:
 
-1. Ve a tu proyecto Supabase: [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Selecciona el proyecto `qinxaemwhjiiuehkgrge`
-3. Ve a **SQL Editor** → **New Query**
-4. Pega el contenido de `database/schema.sql`
-5. Haz clic en **Run**
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### 2. Verificar que el trigger funciona
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Después de ejecutar el schema:
-1. Ve a **Authentication** → **Users** → **Invite user**
-2. Invita el email de tu amigo
-3. Cuando acepte la invitación, ve a **Table Editor** → `profiles`
-4. Deberías ver su perfil creado automáticamente ✅
+## Deploy on Vercel
 
-### 3. Configurar autenticación por email
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-En Supabase Dashboard:
-- **Authentication** → **Providers** → **Email** → ✅ Enable
-- **Authentication** → **Email Templates** → personaliza si quieres
-
----
-
-## 📐 Fórmula de niveles (Elo adaptada)
-
-```
-K = 0.20  (factor de cambio máximo)
-expected = 1 / (1 + 10^((nivel_perdedor - nivel_ganador) / 2))
-delta = K × (1 - expected)
-delta = clamp(delta, 0.05, 0.20)
-
-Ganadores: nivel += delta
-Perdedores: nivel -= delta
-Nivel mínimo: 1.00 | Nivel máximo: 7.00
-```
-
-**Ejemplo:** Equipo de nivel 2.5 gana a equipo de nivel 2.5 → delta = 0.10 (partido igualado).
-
----
-
-## 🏆 Escala de niveles
-
-| Nivel | Categoría |
-|-------|-----------|
-| 1.00 – 1.49 | Iniciación 🌱 |
-| 1.50 – 1.99 | Categoría 9 ⚪ |
-| 2.00 – 2.49 | Categoría 8 🔵 |
-| 2.50 – 2.99 | Categoría 7 🟡 |
-| 3.00 – 3.49 | Categoría 6 🟠 |
-| 3.50 – 3.99 | Categoría 5 🔴 |
-| 4.00 – 4.49 | Categoría 4 🟣 |
-| 4.50 – 4.99 | Categoría 3 ⚫ |
-| 5.00 – 5.99 | Primera 🥇 |
-| 6.00 – 7.00 | Élite 👑 |
-
----
-
-## 🔒 Seguridad
-
-- **RLS activado** en todas las tablas
-- Los usuarios solo pueden leer perfiles de otros, no modificarlos
-- La Anon Key solo permite operaciones que pasen las políticas RLS
-- Los triggers usan `SECURITY DEFINER` para actualizaciones internas seguras
-
----
-
-## 📋 Estructura de archivos
-
-```
-appweb padel/
-├── index.html          ← App completa (HTML + CSS + JS)
-├── README.md           ← Este archivo
-└── database/
-    └── schema.sql      ← Schema de Supabase (ejecutar 1 vez)
-```
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
