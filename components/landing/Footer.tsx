@@ -15,7 +15,7 @@ export default function Footer() {
             </span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-            La plataforma líder de gestión de comunidades de pádel. Registra partidos, desafía a amigos en el Rey de Pista y escala a la élite de tu club.
+            La plataforma líder de gestión de comunidades de pádel. Registra partidos, desafía a amigos en el Rey de Pista y escala a la élite de Punto de Padel.
           </p>
         </div>
 

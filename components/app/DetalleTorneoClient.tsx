@@ -68,7 +68,8 @@ interface DetalleTorneoClientProps {
   torneo: Torneo
   inscripciones: ParejaInscrita[]
   partidos: PartidoBracket[]
-  currentUserId: string
+  currentUserId: string | null
+  userProfile?: any
   todosJugadores: { id: string; full_name: string | null; email: string; nivel: number }[]
 }
 
@@ -77,6 +78,7 @@ export default function DetalleTorneoClient({
   inscripciones,
   partidos,
   currentUserId,
+  userProfile,
   todosJugadores
 }: DetalleTorneoClientProps) {
   const [activeTab, setActiveTab] = useState<'brackets' | 'parejas'>('brackets')
@@ -90,10 +92,16 @@ export default function DetalleTorneoClient({
   const sb = createClient()
 
   // Comprobar si el usuario actual ya está inscrito en este torneo
-  const miInscripcion = inscripciones.find(
+  const miInscripcion: ParejaInscrita | undefined | null = currentUserId ? inscripciones.find(
     ins => ins.jugador1_id === currentUserId || ins.jugador2_id === currentUserId
-  )
+  ) : null
   const isMiembroInscrito = !!miInscripcion
+
+  // Separar confirmadas y pendientes
+  const inscripcionesConfirmadas = inscripciones.filter(i => i.estado === 'confirmado')
+  const inscripcionesPendientes = inscripciones.filter(i => i.estado === 'pendiente')
+
+  const isAdmin = userProfile?.is_admin
 
   // Rondas del bracket (Ronda 1 = Cuartos, Ronda 2 = Semis, Ronda 3 = Final)
   const partidosCuartos = partidos.filter(p => p.ronda === 1)
@@ -101,6 +109,11 @@ export default function DetalleTorneoClient({
   const partidosFinal = partidos.filter(p => p.ronda === 3)
 
   const handleInscribirse = async () => {
+    if (!currentUserId) {
+      router.push('/login')
+      return
+    }
+
     if (!compañeroId) {
       alert('Por favor, selecciona a tu compañero de juego.')
       return
@@ -113,14 +126,30 @@ export default function DetalleTorneoClient({
         torneo_id: torneo.id,
         jugador1_id: currentUserId,
         jugador2_id: compañeroId,
-        estado: 'confirmado'
+        estado: 'pendiente'
       })
 
     if (error) {
       alert(`Error al inscribirse: ${error.message}`)
     } else {
-      alert('¡Inscripción confirmada con éxito!')
+      alert('¡Solicitud de inscripción enviada! Un administrador la revisará pronto.')
       setShowInscribirModal(false)
+      router.refresh()
+    }
+    setLoading(false)
+  }
+
+  // Admin acepta o rechaza
+  const handleAprobar = async (inscripcionId: string, nuevoEstado: 'confirmado' | 'rechazado') => {
+    setLoading(true)
+    const { error } = await sb
+      .from('inscripciones_torneo')
+      .update({ estado: nuevoEstado })
+      .eq('id', inscripcionId)
+
+    if (error) {
+      alert(error.message)
+    } else {
       router.refresh()
     }
     setLoading(false)
@@ -191,7 +220,7 @@ export default function DetalleTorneoClient({
           </div>
           <div className="flex items-center gap-2">
             <Users size={14} className="text-brand-500" />
-            <span>Parejas: {inscripciones.length}/{torneo.max_parejas}</span>
+            <span>Parejas: {inscripcionesConfirmadas.length}/{torneo.max_parejas}</span>
           </div>
           <div className="flex items-center gap-2 col-span-2">
             <Swords size={14} className="text-brand-500" />
@@ -206,12 +235,19 @@ export default function DetalleTorneoClient({
               <div className="p-3.5 rounded-2xl bg-brand-50 border border-brand-200 text-brand-700 flex items-center justify-center gap-2 text-xs font-bold shadow-sm">
                 <UserCheck size={16} /> Ya estás inscrito con {miInscripcion.j1.id === currentUserId ? miInscripcion.j2.full_name?.split(' ')[0] : miInscripcion.j1.full_name?.split(' ')[0]}
               </div>
-            ) : inscripciones.length >= torneo.max_parejas ? (
+            ) : inscripcionesConfirmadas.length >= torneo.max_parejas ? (
               <button
                 disabled
                 className="btn-secondary w-full py-3 text-xs font-bold justify-center opacity-50 cursor-not-allowed"
               >
                 <Lock size={14} /> Inscripciones llenas
+              </button>
+            ) : (miInscripcion as any)?.estado === 'pendiente' ? (
+              <button
+                disabled
+                className="btn-secondary w-full py-3 text-xs font-bold justify-center opacity-70 bg-amber-50 text-amber-700 border-amber-200"
+              >
+                Solicitud pendiente de revisión
               </button>
             ) : (
               <button
@@ -241,20 +277,20 @@ export default function DetalleTorneoClient({
             activeTab === 'parejas' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
           }`}
         >
-          Parejas Inscritas ({inscripciones.length})
+          Parejas Inscritas ({inscripcionesConfirmadas.length})
         </button>
       </div>
 
       {/* Contenido de pestañas */}
       {activeTab === 'parejas' ? (
         <div className="space-y-2.5">
-          {inscripciones.length === 0 ? (
+          {inscripcionesConfirmadas.length === 0 ? (
             <div className="text-center py-10 bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 text-xs font-semibold">
               Ninguna pareja inscrita todavía. ¡Sé el primero!
             </div>
           ) : (
             <div className="space-y-2">
-              {inscripciones.map(ins => (
+              {inscripcionesConfirmadas.map(ins => (
                 <div key={ins.id} className="card p-4 bg-white border border-slate-100 shadow-sm flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-2">
@@ -271,6 +307,47 @@ export default function DetalleTorneoClient({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Solicitudes Pendientes (Admin) */}
+          {isAdmin && inscripcionesPendientes.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
+              <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest pl-1">
+                Solicitudes Pendientes ({inscripcionesPendientes.length})
+              </h3>
+              <div className="space-y-2">
+                {inscripcionesPendientes.map(ins => (
+                  <div key={ins.id} className="card p-4 bg-amber-50/50 border border-amber-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        <PlayerAvatar name={ins.j1.full_name || ins.j1.email} avatarUrl={ins.j1.avatar_url} size="sm" className="border-2 border-white" />
+                        <PlayerAvatar name={ins.j2.full_name || ins.j2.email} avatarUrl={ins.j2.avatar_url} size="sm" className="border-2 border-white" />
+                      </div>
+                      <div className="text-xs font-bold text-slate-800">
+                        <p>{ins.j1.full_name || ins.j1.email.split('@')[0]}</p>
+                        <p className="mt-0.5 text-slate-400 font-medium">con {ins.j2.full_name || ins.j2.email.split('@')[0]}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => handleAprobar(ins.id, 'confirmado')}
+                        disabled={loading || inscripcionesConfirmadas.length >= torneo.max_parejas}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-[10px] font-bold shadow-sm transition-colors disabled:opacity-50"
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        onClick={() => handleAprobar(ins.id, 'rechazado')}
+                        disabled={loading}
+                        className="flex-1 sm:flex-none px-4 py-2 bg-white hover:bg-red-50 border border-slate-200 text-red-600 rounded-xl text-[10px] font-bold shadow-sm transition-colors"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

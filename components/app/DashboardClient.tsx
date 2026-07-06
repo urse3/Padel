@@ -1,28 +1,30 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
 import { getLevelProgress, getLevelInfo } from '@/lib/elo'
 import { formatDateShort } from '@/lib/utils'
-import AgendaActividades from '@/components/AgendaActividades'
 import { createClient } from '@/lib/supabase/client'
-import { LogOut, Camera, Trophy, Swords, Calendar, Award, Star, Settings } from 'lucide-react'
+import { LogOut, Camera, Trophy, Calendar, Clock, MapPin, Swords, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface DashboardClientProps {
   user: any
   profile: any
   partidos: any[]
+  agenda: any[]
 }
 
-export default function DashboardClient({ user, profile: initialProfile, partidos }: DashboardClientProps) {
+export default function DashboardClient({ user, profile: initialProfile, partidos, agenda }: DashboardClientProps) {
   const [profile, setProfile] = useState(initialProfile)
   const [uploading, setUploading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [fadeKey, setFadeKey] = useState(0)
   const ITEMS_PER_PAGE = 5
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const historialRef = useRef<HTMLDivElement>(null)
   
   const router = useRouter()
   const sb = createClient()
@@ -81,10 +83,19 @@ export default function DashboardClient({ user, profile: initialProfile, partido
   const progress = getLevelProgress(nivelNum)
   const info = getLevelInfo(nivelNum)
 
-  // Calcular paginación de partidos
+  // Paginación instantánea (sin network, solo state)
   const totalPages = Math.ceil(partidos.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const currentPartidos = partidos.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+
+  const goToPage = useCallback((newPage: number) => {
+    setCurrentPage(newPage)
+    setFadeKey(k => k + 1)
+    // Scroll suave al inicio del historial
+    setTimeout(() => {
+      historialRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 10)
+  }, [])
 
   return (
     <div className="px-5 pt-6 space-y-6 animate-fade-in">
@@ -205,23 +216,60 @@ export default function DashboardClient({ user, profile: initialProfile, partido
         </div>
       </div>
 
-      {/* Mi Agenda */}
-      <AgendaActividades userId={user.id} title="Mis Próximos Partidos" />
+      {/* Agenda del usuario (datos del servidor, sin fetch en cliente) */}
+      {agenda.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-extrabold text-slate-950 font-kanit uppercase tracking-wider">
+            Mis Próximos Partidos
+          </h2>
+          <div className="space-y-3">
+            {agenda.map((act: any) => (
+              <div
+                key={`${act.tipo}-${act.id}`}
+                className="bg-slate-900/80 rounded-xl border border-slate-800 p-4 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                      act.tipo === 'partido'
+                        ? 'bg-cyan-900/50 text-cyan-300 border border-cyan-800'
+                        : 'bg-purple-900/50 text-purple-300 border border-purple-800'
+                    }`}>
+                      {act.tipo === 'partido' ? 'Partido' : 'Rey de Pista'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold">{formatDateShort(act.fecha)} · {act.hora?.slice(0,5)}h</span>
+                  </div>
+                  <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                    <MapPin size={11} className="text-amber-400 flex-shrink-0" />
+                    {act.club}
+                  </p>
+                </div>
+                <Link
+                  href={act.tipo === 'partido' ? `/comunidad/partidos/${act.id}` : `/comunidad/rey-de-pista/${act.id}`}
+                  className="flex-shrink-0 p-2 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                >
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Historial de partidos */}
-      <div className="space-y-3">
+      <div className="space-y-3" ref={historialRef}>
         <h2 className="text-sm font-extrabold text-slate-950 font-kanit uppercase tracking-wider">
           Historial de Partidos
         </h2>
 
         {partidos.length === 0 ? (
-          <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 p-6 text-center text-slate-400">
+          <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-6 text-center text-slate-400">
             <Trophy size={32} className="mx-auto text-slate-500 mb-2" />
             <p className="text-xs font-semibold text-slate-300">¿Aún sin partidos disputados?</p>
             <p className="text-[10px] text-slate-500 mt-1">Únete a un partido o regístralo para subir tu nivel.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3" key={fadeKey} style={{ animation: 'fadeIn 0.15s ease-out' }}>
             {currentPartidos.map((p: any) => {
               const esGanador = p.ganador_1_id === user.id || p.ganador_2_id === user.id
               const delta = parseFloat(p.delta_nivel || 0.10)
@@ -238,7 +286,7 @@ export default function DashboardClient({ user, profile: initialProfile, partido
               return (
                 <div
                   key={p.id}
-                  className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 shadow-lg shadow-black/20 p-4 hover:scale-[1.02] transition-all duration-200"
+                  className="bg-slate-900/80 rounded-xl border border-slate-800 shadow-lg shadow-black/20 p-4"
                 >
                   <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${esGanador ? 'bg-green-500/20 text-brand-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
@@ -274,23 +322,23 @@ export default function DashboardClient({ user, profile: initialProfile, partido
             
             {/* Controles de Paginación */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 pb-2">
+              <div className="flex items-center justify-between pt-3 pb-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => goToPage(Math.max(currentPage - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  Anterior
+                  <ChevronLeft size={14} /> Anterior
                 </button>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Página {currentPage} de {totalPages}
+                  {currentPage} / {totalPages}
                 </span>
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev + 1, 1))}
+                  onClick={() => goToPage(Math.min(currentPage + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  Siguiente
+                  Siguiente <ChevronRight size={14} />
                 </button>
               </div>
             )}

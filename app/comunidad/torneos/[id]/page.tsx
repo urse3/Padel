@@ -2,6 +2,8 @@ import React from 'react'
 import { createClient } from '@/lib/supabase/server'
 import DetalleTorneoClient from '@/components/app/DetalleTorneoClient'
 import { notFound } from 'next/navigation'
+import Header from '@/components/landing/Header'
+import Footer from '@/components/landing/Footer'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -11,12 +13,10 @@ export default async function DetalleTorneoPage({ params }: PageProps) {
   const { id } = await params
   const sb = await createClient()
 
-  // 1. Obtener sesión
+  // 1. Obtener sesión si existe
   const {
     data: { user }
   } = await sb.auth.getUser()
-
-  if (!user) return null
 
   // 2. Cargar torneo
   const { data: torneo, error: errorTorneo } = await sb
@@ -65,19 +65,35 @@ export default async function DetalleTorneoPage({ params }: PageProps) {
     .order('posicion', { ascending: true })
 
   // 5. Cargar todos los jugadores para el modal de inscripción (para elegir pareja)
-  const { data: todosJugadores } = await sb
-    .from('profiles')
-    .select('id, full_name, email, nivel')
-    .neq('id', user.id)
-    .order('full_name', { ascending: true })
+  let todosJugadores: any[] = []
+  let profile = null
+  if (user) {
+    const { data: jugadores } = await sb
+      .from('profiles')
+      .select('id, full_name, email, nivel, is_admin')
+      .neq('id', user.id)
+      .order('full_name', { ascending: true })
+    
+    if (jugadores) todosJugadores = jugadores
+
+    const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
+    if (p) profile = p
+  }
 
   return (
-    <DetalleTorneoClient
-      torneo={torneo as any}
-      inscripciones={(inscripciones as any) || []}
-      partidos={(partidos as any) || []}
-      currentUserId={user.id}
-      todosJugadores={todosJugadores || []}
-    />
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <Header />
+      <main className="flex-1 max-w-md w-full mx-auto pb-24 pt-20 px-4 animate-fade-in">
+        <DetalleTorneoClient
+          torneo={torneo as any}
+          inscripciones={(inscripciones as any) || []}
+          partidos={(partidos as any) || []}
+          currentUserId={user?.id || null}
+          userProfile={profile}
+          todosJugadores={todosJugadores || []}
+        />
+      </main>
+      <Footer />
+    </div>
   )
 }

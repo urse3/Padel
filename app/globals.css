@@ -131,12 +131,13 @@ h1, h2, h3, .font-kanit {
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
   outline: none;
+  display: block;
 }
 .input-base:focus {
   border-color: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
 }
-.input-base::placeholder { color: #94a3b8; }
+.input-base::placeholder { color: #94a3b8; font-size: 0.8125rem; }
 
 /* Ranking positions */
 .rank-1 {

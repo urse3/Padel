@@ -103,7 +103,7 @@ export default function NewsSection() {
   return (
     <section className="space-y-8">
       <div className="text-center space-y-2 mb-10">
-        <h2 className="text-3xl font-black text-slate-900 font-kanit">Actualidad del Club</h2>
+        <h2 className="text-3xl font-black text-slate-900 font-kanit">Actualidad Punto de Padel</h2>
         <p className="text-sm text-slate-500 font-medium max-w-md mx-auto">
           Mantente al día con las últimas novedades, torneos y partidos destacados de nuestra comunidad.
         </p>

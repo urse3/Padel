@@ -29,7 +29,7 @@ export default async function RankingPublicoPage() {
             <h1 className="text-3xl font-black text-slate-900 font-kanit">Ranking</h1>
           </div>
           <p className="text-sm text-slate-500 font-medium ml-14">
-            Los jugadores con el nivel más alto de nuestra comunidad. ¡Registra tus victorias y sube de posición!
+            Los jugadores con el nivel mas alto de Punto de Padel. ¡Registra tus victorias y sube de posición!
           </p>
         </div>
       </div>

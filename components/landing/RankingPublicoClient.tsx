@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
 import RankingMovements from '@/components/landing/RankingMovements'
-import { Trophy, Search, Flame, TrendingUp, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Trophy, Search, Flame, TrendingUp, ChevronRight, ChevronLeft, Medal } from 'lucide-react'
 import Link from 'next/link'
 
 interface Player {
@@ -31,10 +31,10 @@ const TOP_COUNT = 10
 const PAGE_SIZE = 10
 
 // Colores especiales para top 3
-const topStyle: Record<number, { row: string; num: string; label: string }> = {
-  1: { row: 'bg-amber-50  border-amber-200',  num: 'text-amber-500',  label: '🥇' },
-  2: { row: 'bg-slate-50  border-slate-200',  num: 'text-slate-400',  label: '🥈' },
-  3: { row: 'bg-orange-50 border-orange-200', num: 'text-orange-400', label: '🥉' },
+const topStyle: Record<number, { row: string; num: string; label: React.ReactNode }> = {
+  1: { row: 'bg-amber-50  border-amber-200',  num: 'text-amber-500',  label: <Medal size={24} className="text-amber-500 drop-shadow-sm mx-auto" /> },
+  2: { row: 'bg-slate-50  border-slate-200',  num: 'text-slate-400',  label: <Medal size={24} className="text-slate-400 drop-shadow-sm mx-auto" /> },
+  3: { row: 'bg-orange-50 border-orange-200', num: 'text-orange-400', label: <Medal size={24} className="text-orange-400 drop-shadow-sm mx-auto" /> },
 }
 
 export default function RankingPublicoClient({ players }: Props) {
@@ -76,7 +76,7 @@ export default function RankingPublicoClient({ players }: Props) {
         {/* Posición */}
         <div className="w-10 flex-shrink-0 text-center">
           {isTop3 ? (
-            <span className="text-xl">{style.label}</span>
+            style.label
           ) : (
             <span className={`text-sm font-black ${style.num}`}>#{pos}</span>
           )}
@@ -152,7 +152,7 @@ export default function RankingPublicoClient({ players }: Props) {
                   placeholder="Buscar jugador..."
                   value={search}
                   onChange={e => handleSearch(e.target.value)}
-                  className="input-base pl-9 py-2.5 text-sm w-full"
+                  className="input-base pl-10 py-2.5 text-sm w-full"
                 />
               </div>
 

@@ -35,9 +35,9 @@ export default function HeroSection() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <Link href="/registro" className="btn-primary py-4 px-6 justify-center text-sm font-bold shadow-green">
-              Únete gratis <ChevronRight size={18} />
+              Únete <ChevronRight size={18} />
             </Link>
-            <Link href="#ranking" className="btn-secondary py-4 px-6 justify-center text-sm font-bold">
+            <Link href="/comunidad/ranking" className="btn-secondary py-4 px-6 justify-center text-sm font-bold">
               Ver ranking
             </Link>
           </div>

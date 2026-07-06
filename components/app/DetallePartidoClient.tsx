@@ -35,6 +35,7 @@ interface Jugador {
 
 interface Inscripcion {
   id: string
+  estado: string
   jugador: Jugador
 }
 
@@ -56,8 +57,8 @@ interface Partido {
 
 interface DetallePartidoClientProps {
   partido: Partido
-  currentUserId: string
-  userProfile: any
+  currentUserId: string | null
+  userProfile?: any
 }
 
 interface Mensaje {
@@ -92,11 +93,14 @@ export default function DetallePartidoClient({
   const sb = createClient()
 
   const creador = partido.creador
-  const inscripciones = partido.inscripciones
-  const isApuntado = inscripciones.some(ins => ins.jugador.id === currentUserId)
-  const apuntadosCount = inscripciones.length
+  const isCreator = currentUserId === partido.creador_id
+  const inscripciones = partido.inscripciones || []
+  const apuntadosCount = inscripciones.filter(i => i.estado === 'confirmado').length
   const maxCount = partido.max_jugadores
   const esCompleto = apuntadosCount >= maxCount
+  const userInscripcion = inscripciones.find(ins => ins.jugador.id === currentUserId)
+  const isApuntado = userInscripcion?.estado === 'confirmado'
+  const isPendiente = userInscripcion?.estado === 'pendiente'
 
   // 1. Cargar mensajes del chat
   const fetchMensajes = async () => {
@@ -174,28 +178,35 @@ export default function DetallePartidoClient({
 
   // 3. Sistema para unirse
   const handleJoin = async () => {
+    if (!currentUserId) {
+      router.push('/login')
+      return
+    }
+
     setActionError(null)
     setLoading(true)
 
     // Validar nivel
-    const nivelUser = parseFloat(userProfile.nivel || 1.0)
-    if (nivelUser < partido.nivel_min || nivelUser > partido.nivel_max) {
-      setActionError(`Tu nivel (${nivelUser.toFixed(2)}) no se encuentra dentro del rango requerido.`)
-      setLoading(false)
-      return
+    if (userProfile) {
+      const nivelUser = parseFloat(userProfile.nivel || 1.0)
+      if (nivelUser < partido.nivel_min || nivelUser > partido.nivel_max) {
+        setActionError(`Tu nivel (${nivelUser.toFixed(2)}) no se encuentra dentro del rango requerido.`)
+        setLoading(false)
+        return
+      }
     }
 
     const { error } = await sb
       .from('inscripciones')
       .insert({
         partido_id: partido.id,
-        jugador_id: currentUserId
+        jugador_id: currentUserId,
+        estado: 'pendiente'
       })
 
     if (error) {
       setActionError(error.message)
     } else {
-      // Recargar localmente si fuera necesario
       router.refresh()
     }
     setLoading(false)
@@ -203,6 +214,7 @@ export default function DetallePartidoClient({
 
   // 4. Sistema para salirse
   const handleLeave = async () => {
+    if (!currentUserId) return
     setActionError(null)
     setLoading(true)
 
@@ -213,6 +225,22 @@ export default function DetallePartidoClient({
       .from('inscripciones')
       .delete()
       .eq('id', userInsc.id)
+
+    if (error) {
+      setActionError(error.message)
+    } else {
+      router.refresh()
+    }
+    setLoading(false)
+  }
+
+  // 4.5 Creador acepta o rechaza
+  const handleAprobar = async (inscripcionId: string, nuevoEstado: 'confirmado' | 'rechazado') => {
+    setLoading(true)
+    const { error } = await sb
+      .from('inscripciones')
+      .update({ estado: nuevoEstado })
+      .eq('id', inscripcionId)
 
     if (error) {
       setActionError(error.message)
@@ -481,6 +509,19 @@ export default function DetallePartidoClient({
                 >
                   <UserMinus size={14} /> Salirse del partido
                 </button>
+              ) : isPendiente ? (
+                <div className="flex flex-col gap-2">
+                  <button disabled className="btn-secondary w-full py-3 text-xs font-bold justify-center opacity-70 bg-amber-50 text-amber-700 border-amber-200">
+                    <Clock size={14} /> Solicitud pendiente de confirmación
+                  </button>
+                  <button
+                    onClick={handleLeave}
+                    disabled={loading}
+                    className="btn-secondary w-full py-2.5 text-[10px] font-bold justify-center border-red-200 hover:bg-red-50/50 hover:text-red-600 transition-colors"
+                  >
+                    Cancelar solicitud
+                  </button>
+                </div>
               ) : esCompleto ? (
                 <button
                   disabled
@@ -508,9 +549,9 @@ export default function DetallePartidoClient({
           </h2>
 
           <div className="card p-4 bg-white divide-y divide-slate-100 shadow-sm border border-slate-100">
-            {inscripciones.map(ins => {
+            {inscripciones.filter(i => i.estado === 'confirmado').map(ins => {
               const p = ins.jugador
-              const isCreator = p.id === partido.creador_id
+              const isMatchCreator = p.id === partido.creador_id
               return (
                 <div key={ins.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                   <div className="flex items-center gap-3">
@@ -524,7 +565,7 @@ export default function DetallePartidoClient({
                       <p className="text-xs font-bold text-slate-800">
                         {p.full_name || p.email.split('@')[0]}
                       </p>
-                      {isCreator && (
+                      {isMatchCreator && (
                         <span className="text-[8px] font-black uppercase text-brand-600 bg-brand-50 border border-brand-100 rounded-md px-1 py-0.5 mt-0.5 inline-block">
                           Organizador
                         </span>
@@ -536,6 +577,53 @@ export default function DetallePartidoClient({
               )
             })}
           </div>
+
+          {/* Solicitudes pendientes (Solo para el creador) */}
+          {isCreator && inscripciones.some(i => i.estado === 'pendiente') && (
+            <div className="mt-4">
+              <h2 className="text-xs font-black text-amber-500 uppercase tracking-widest pl-1 mb-2 flex items-center gap-1">
+                <Clock size={14} /> Solicitudes Pendientes
+              </h2>
+              <div className="card p-4 bg-amber-50/30 divide-y divide-amber-100 border border-amber-200">
+                {inscripciones.filter(i => i.estado === 'pendiente').map(ins => {
+                  const p = ins.jugador
+                  return (
+                    <div key={ins.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                        <PlayerAvatar
+                          name={p.full_name || p.email}
+                          avatarUrl={p.avatar_url}
+                          size="sm"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">
+                            {p.full_name || p.email.split('@')[0]}
+                          </p>
+                          <LevelBadge nivel={parseFloat(p.nivel as any)} size="sm" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleAprobar(ins.id, 'confirmado')}
+                          disabled={loading || esCompleto}
+                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-[10px] font-bold shadow-sm transition-colors disabled:opacity-50"
+                        >
+                          Aceptar
+                        </button>
+                        <button
+                          onClick={() => handleAprobar(ins.id, 'rechazado')}
+                          disabled={loading}
+                          className="px-3 py-1.5 bg-white hover:bg-red-50 border border-slate-200 text-red-600 rounded-lg text-[10px] font-bold shadow-sm transition-colors"
+                        >
+                          Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Registro del resultado de partido oficial */}
