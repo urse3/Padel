@@ -51,6 +51,7 @@ export default function NuevoPartidoClient({ userId, pistas }: NuevoPartidoClien
       return
     }
 
+    try {
       // Obtener nombre del club de la pista si se ha seleccionado una
       let finalClub = club.trim()
       if (pistaId) {
