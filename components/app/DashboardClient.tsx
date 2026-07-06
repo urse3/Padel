@@ -6,6 +6,7 @@ import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
 import { getLevelProgress, getLevelInfo } from '@/lib/elo'
 import { formatDateShort } from '@/lib/utils'
+import AgendaActividades from '@/components/AgendaActividades'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, Camera, Trophy, Swords, Calendar, Award, Star, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -19,6 +20,8 @@ interface DashboardClientProps {
 export default function DashboardClient({ user, profile: initialProfile, partidos }: DashboardClientProps) {
   const [profile, setProfile] = useState(initialProfile)
   const [uploading, setUploading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const router = useRouter()
@@ -77,6 +80,11 @@ export default function DashboardClient({ user, profile: initialProfile, partido
   const nivelNum = parseFloat(profile.nivel || 1.0)
   const progress = getLevelProgress(nivelNum)
   const info = getLevelInfo(nivelNum)
+
+  // Calcular paginación de partidos
+  const totalPages = Math.ceil(partidos.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const currentPartidos = partidos.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
   return (
     <div className="px-5 pt-6 space-y-6 animate-fade-in">
@@ -181,15 +189,15 @@ export default function DashboardClient({ user, profile: initialProfile, partido
         </div>
       </div>
 
-      {/* Grid de Estadísticas */}
+      {/* Estadísticas */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 p-4 text-center">
-          <p className="text-xl font-black text-white font-kanit">{profile.partidos || 0}</p>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Jugados</p>
-        </div>
         <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 border-b-brand-500 border-b-[3px] p-4 text-center">
-          <p className="text-xl font-black text-brand-400 font-kanit">{profile.victorias || 0}</p>
-          <p className="text-[10px] text-brand-500/70 font-bold uppercase tracking-widest mt-1">Victorias</p>
+          <p className="text-xl font-black text-white font-kanit">{profile.partidos || 0}</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Partidos</p>
+        </div>
+        <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 border-b-green-500 border-b-[3px] p-4 text-center">
+          <p className="text-xl font-black text-green-400 font-kanit">{profile.victorias || 0}</p>
+          <p className="text-[10px] text-green-500/70 font-bold uppercase tracking-widest mt-1">Victorias</p>
         </div>
         <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 border-b-red-500 border-b-[3px] p-4 text-center">
           <p className="text-xl font-black text-red-400 font-kanit">{profile.derrotas || 0}</p>
@@ -197,10 +205,13 @@ export default function DashboardClient({ user, profile: initialProfile, partido
         </div>
       </div>
 
+      {/* Mi Agenda */}
+      <AgendaActividades userId={user.id} title="Mis Próximos Partidos" />
+
       {/* Historial de partidos */}
       <div className="space-y-3">
         <h2 className="text-sm font-extrabold text-slate-950 font-kanit uppercase tracking-wider">
-          Últimos 5 partidos
+          Historial de Partidos
         </h2>
 
         {partidos.length === 0 ? (
@@ -211,7 +222,7 @@ export default function DashboardClient({ user, profile: initialProfile, partido
           </div>
         ) : (
           <div className="space-y-3">
-            {partidos.map((p: any) => {
+            {currentPartidos.map((p: any) => {
               const esGanador = p.ganador_1_id === user.id || p.ganador_2_id === user.id
               const delta = parseFloat(p.delta_nivel || 0.10)
               const sign = esGanador ? `+${delta.toFixed(2)}` : `-${delta.toFixed(2)}`
@@ -260,6 +271,29 @@ export default function DashboardClient({ user, profile: initialProfile, partido
                 </div>
               )
             })}
+            
+            {/* Controles de Paginación */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 pb-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Anterior
+                </button>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev + 1, 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

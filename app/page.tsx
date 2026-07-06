@@ -4,6 +4,7 @@ import HeroSection from '@/components/landing/HeroSection'
 import MatchFeed from '@/components/landing/MatchFeed'
 import RankingMovements from '@/components/landing/RankingMovements'
 import EventsSection from '@/components/landing/EventsSection'
+import AgendaActividades from '@/components/AgendaActividades'
 import Footer from '@/components/landing/Footer'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
@@ -146,6 +147,7 @@ export default async function Home() {
             </Link>
           </div>
           <EventsSection />
+          <AgendaActividades />
         </section>
 
         {/* Sección: Sobre Nosotros (Static Content) */}

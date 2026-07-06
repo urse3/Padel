@@ -68,7 +68,6 @@ export default async function DashboardPage() {
     `)
     .or(`ganador_1_id.eq.${user.id},ganador_2_id.eq.${user.id},perdedor_1_id.eq.${user.id},perdedor_2_id.eq.${user.id}`)
     .order('created_at', { ascending: false })
-    .limit(5)
 
   return (
     <DashboardClient 
