@@ -99,7 +99,7 @@ export default function RankingClient({ players, currentUserId }: RankingClientP
           placeholder="Buscar jugador..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="input-base pl-10"
+          className="input-base !pl-10"
         />
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
       </div>

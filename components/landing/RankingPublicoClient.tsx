@@ -152,7 +152,7 @@ export default function RankingPublicoClient({ players }: Props) {
                   placeholder="Buscar jugador..."
                   value={search}
                   onChange={e => handleSearch(e.target.value)}
-                  className="input-base pl-10 py-2.5 text-sm w-full"
+                  className="input-base !pl-10 py-2.5 text-sm w-full"
                 />
               </div>
 

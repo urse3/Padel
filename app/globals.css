@@ -59,85 +59,87 @@ h1, h2, h3, .font-kanit {
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-/* Card base */
-.card {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 1.25rem;
-  box-shadow: var(--shadow-card);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.card:hover { box-shadow: var(--shadow-card-hover); }
-
 /* Level badge gradiente */
 .level-badge {
   background: linear-gradient(135deg, #5eff84, #22c55e);
   box-shadow: var(--shadow-green);
 }
 
-/* Botón primario */
-.btn-primary {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  color: white;
-  font-weight: 600;
-  border-radius: 0.875rem;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.btn-primary:hover {
-  box-shadow: var(--shadow-hero);
-  transform: scale(1.02);
-}
-.btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
+@layer components {
+  /* Card base */
+  .card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card:hover { box-shadow: var(--shadow-card-hover); }
 
-/* Botón secundario */
-.btn-secondary {
-  background: #f1f5f9;
-  color: #334155;
-  font-weight: 600;
-  border-radius: 0.875rem;
-  padding: 0.75rem 1.5rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: 1px solid #e2e8f0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.btn-secondary:hover {
-  background: #e2e8f0;
-  transform: scale(1.02);
-}
-.btn-secondary:active { transform: scale(0.98); }
+  /* Botón primario */
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: 600;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover {
+    box-shadow: var(--shadow-hero);
+    transform: scale(1.02);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
 
-/* Input base */
-.input-base {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 0.875rem;
-  padding: 0.75rem 1rem;
-  color: #0f172a;
-  font-size: 0.875rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  width: 100%;
-  outline: none;
-  display: block;
+  /* Botón secundario */
+  .btn-secondary {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-secondary:hover {
+    background: #e2e8f0;
+    transform: scale(1.02);
+  }
+  .btn-secondary:active { transform: scale(0.98); }
+
+  /* Input base */
+  .input-base {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1rem;
+    color: #0f172a;
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    outline: none;
+    display: block;
+  }
+  .input-base:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  }
+  .input-base::placeholder { color: #94a3b8; font-size: 0.8125rem; }
 }
-.input-base:focus {
-  border-color: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
-}
-.input-base::placeholder { color: #94a3b8; font-size: 0.8125rem; }
 
 /* Ranking positions */
 .rank-1 {

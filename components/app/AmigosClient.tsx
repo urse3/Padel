@@ -184,7 +184,6 @@ export default function AmigosClient({ relaciones, todosUsuarios, currentUserId 
                     <PlayerAvatar name={a.full_name || a.email} avatarUrl={a.avatar_url} size="sm" className="border border-slate-100" />
                     <div>
                       <p className="text-xs font-bold text-slate-800">{a.full_name || a.email.split('@')[0]}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{a.email}</p>
                     </div>
                   </div>
                   <LevelBadge nivel={parseFloat(a.nivel as any)} size="sm" />
@@ -247,7 +246,7 @@ export default function AmigosClient({ relaciones, todosUsuarios, currentUserId 
               placeholder="Buscar miembros por nombre..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="input-base pl-10"
+              className="input-base !pl-10"
             />
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           </div>

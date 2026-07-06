@@ -99,8 +99,8 @@ export default function RegisterPage() {
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Tu nombre y apellido"
-                className="input-base pl-10 py-2.5"
+                placeholder="Juan Pérez"
+                className="input-base !pl-10 py-2.5"
               />
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             </div>
@@ -118,7 +118,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                className="input-base pl-10 py-2.5"
+                className="input-base !pl-10 py-2.5"
               />
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             </div>
@@ -133,10 +133,11 @@ export default function RegisterPage() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                minLength={6}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="input-base pl-10 pr-10 py-2.5"
+                placeholder="••••••••"
+                className="input-base !pl-10 !pr-10 py-2.5"
               />
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <button
