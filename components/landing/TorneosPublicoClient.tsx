@@ -130,14 +130,14 @@ export default function TorneosPublicoClient({ torneos }: Props) {
                 <div className="mt-auto pt-2">
                   {activeTab === 'activos' ? (
                     <Link
-                      href={`/torneos/${t.id}`}
-                      className="btn-primary py-2.5 w-full text-xs font-bold justify-center"
+                      href={`/comunidad/torneos/${t.id}`}
+                      className="btn-primary py-2.5 w-full text-xs font-bold justify-center mt-auto"
                     >
                       Ver detalles e inscribirse <ArrowRight size={14} />
                     </Link>
                   ) : (
                     <Link
-                      href={`/torneos/${t.id}`}
+                      href={`/comunidad/torneos/${t.id}`}
                       className="btn-secondary py-2.5 w-full text-xs font-bold justify-center"
                     >
                       Ver resultados <ArrowRight size={14} />

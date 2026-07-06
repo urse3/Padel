@@ -159,10 +159,10 @@ export default function EventsSection() {
                       </div>
                     </div>
                     <Link
-                      href={`/torneos/${t.id}`}
-                      className="btn-primary py-2.5 w-full text-xs font-bold justify-center mt-auto"
+                      href={`/comunidad/torneos/${t.id}`}
+                      className="inline-flex items-center justify-center gap-1.5 w-full mt-4 bg-brand-50 text-brand-600 hover:bg-brand-100 py-2.5 rounded-xl text-xs font-bold transition-colors"
                     >
-                      Ver detalles e inscribirse <ArrowRight size={14} />
+                      Inscribirse <ArrowRight size={14} />
                     </Link>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export default function EventsSection() {
                       <Calendar size={12} />
                       <span>Finalizado el {t.fecha_fin}</span>
                     </div>
-                    <Link href={`/torneos/${t.id}`} className="text-xs font-bold text-slate-500 hover:text-brand-600 flex items-center gap-1">
+                    <Link href={`/comunidad/torneos/${t.id}`} className="text-xs font-bold text-slate-500 hover:text-brand-600 flex items-center gap-1">
                       Ver resultados finales <ArrowRight size={12} />
                     </Link>
                   </div>

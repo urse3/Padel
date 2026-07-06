@@ -118,7 +118,7 @@ export default function TorneosClient({ torneos }: TorneosClientProps) {
                       Formato: {formatTipo(t.tipo)}
                     </span>
                     <Link
-                      href={`/torneos/${t.id}`}
+                      href={`/comunidad/torneos/${t.id}`}
                       className="btn-primary py-2 px-4 text-xs font-bold"
                     >
                       Ver torneo <ArrowRight size={14} />
