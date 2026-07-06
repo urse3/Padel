@@ -18,6 +18,37 @@ interface Match {
 }
 
 export default function MatchFeed() {
+  const parseSets = (ganadoresStr: string, perdedoresStr: string) => {
+    const gParts = ganadoresStr ? ganadoresStr.split(/[,\s]+/).filter(Boolean) : []
+    const pParts = perdedoresStr ? perdedoresStr.split(/[,\s]+/).filter(Boolean) : []
+    
+    const finalGanadores: string[] = []
+    const finalPerdedores: string[] = []
+    
+    for (let i = 0; i < Math.max(gParts.length, pParts.length); i++) {
+      const g = gParts[i] || ''
+      const p = pParts[i] || ''
+      
+      if (g.includes('-') && !p.includes('-')) {
+        // Formato donde meten todo en ganadores e.g. "6-4, 6-2"
+        const spl = g.split('-')
+        finalGanadores.push(spl[0])
+        finalPerdedores.push(spl[1] || '0')
+      } else {
+        // Formato separado: ganadores "6, 6", perdedores "4, 2"
+        if (g.includes('-')) finalGanadores.push(g.split('-')[0])
+        else finalGanadores.push(g || '0')
+        
+        if (p.includes('-')) finalPerdedores.push(p.split('-')[0])
+        else finalPerdedores.push(p || '0')
+      }
+    }
+
+    // Fallback if empty
+    if (finalGanadores.length === 0) return { g: ['?'], p: ['?'] }
+    return { g: finalGanadores, p: finalPerdedores }
+  }
+
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const sb = createClient()
@@ -111,7 +142,7 @@ export default function MatchFeed() {
         return (
           <div
             key={m.id}
-            className="card p-4 hover:shadow-card-hover transition-all duration-300 relative overflow-hidden"
+            className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-800 shadow-lg shadow-black/20 p-4 hover:scale-[1.02] transition-all duration-200 relative overflow-hidden"
           >
             {/* Cabecera de la tarjeta */}
             <div className="flex items-center justify-between mb-3">
@@ -121,32 +152,52 @@ export default function MatchFeed() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{dateStr}</span>
             </div>
 
-            {/* Marcador y jugadores */}
-            <div className="grid grid-cols-5 gap-2 items-center">
-              {/* Pareja ganadora */}
-              <div className="col-span-2 text-left min-w-0 pr-1">
-                <p className="font-extrabold text-slate-900 text-xs sm:text-sm truncate">🟢 {nameG1}</p>
-                <p className="font-extrabold text-slate-900 text-xs sm:text-sm truncate mt-0.5">🟢 {nameG2}</p>
-              </div>
+              {/* Marcador estructurado por sets */}
+              <div className="col-span-5 mt-2 flex flex-col gap-2">
+                
+                {/* Fila Ganadores */}
+                <div className="flex items-center justify-between bg-green-50/5 rounded-lg p-2">
+                  <div className="min-w-0 pr-2 flex flex-col justify-center">
+                    <p className="font-bold text-white text-xs sm:text-sm truncate leading-tight flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-brand-500 shadow-glow"></span>
+                      {nameG1}
+                    </p>
+                    <p className="font-bold text-white text-xs sm:text-sm truncate leading-tight flex items-center gap-1.5 mt-1">
+                      <span className="w-2 h-2 rounded-full bg-brand-500 shadow-glow"></span>
+                      {nameG2}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {parseSets(m.sets_ganadores, m.sets_perdedores).g.map((setNum, idx) => (
+                      <div key={idx} className="w-8 h-8 rounded bg-brand-500/20 border border-brand-500/50 flex items-center justify-center">
+                        <span className="text-sm font-black text-brand-400">{setNum}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Resultado central */}
-              <div className="col-span-1 flex flex-col items-center justify-center bg-slate-50/80 border border-slate-100 rounded-xl py-1.5 px-1 font-kanit">
-                <p className="text-[10px] font-bold text-brand-600 uppercase tracking-wider mb-0.5">Ganadores</p>
-                <p className="text-xs font-black text-slate-800 text-center tracking-tight leading-none">
-                  {m.sets_ganadores}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">vs</p>
-                <p className="text-[10px] text-slate-400 tracking-tight font-medium mt-0.5 leading-none">
-                  {m.sets_perdedores}
-                </p>
-              </div>
+                {/* Fila Perdedores */}
+                <div className="flex items-center justify-between bg-slate-800/30 rounded-lg p-2">
+                  <div className="min-w-0 pr-2 flex flex-col justify-center">
+                    <p className="font-semibold text-slate-400 text-xs sm:text-sm truncate leading-tight flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                      {nameP1}
+                    </p>
+                    <p className="font-semibold text-slate-400 text-xs sm:text-sm truncate leading-tight flex items-center gap-1.5 mt-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                      {nameP2}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {parseSets(m.sets_ganadores, m.sets_perdedores).p.map((setNum, idx) => (
+                      <div key={idx} className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center">
+                        <span className="text-sm font-bold text-slate-300">{setNum}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Pareja perdedora */}
-              <div className="col-span-2 text-right min-w-0 pl-1">
-                <p className="font-semibold text-slate-500 text-xs sm:text-sm truncate">🔴 {nameP1}</p>
-                <p className="font-semibold text-slate-500 text-xs sm:text-sm truncate mt-0.5">🔴 {nameP2}</p>
               </div>
-            </div>
           </div>
         )
       })}

@@ -675,26 +675,23 @@ export default function DetallePartidoClient({
               {/* Sets ganadores y perdedores */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Sets Ganador (ej: 6-3, 7-5)
-                  </label>
+                  <label className="block text-[10px] text-slate-500 mb-1">Sets Ganador (ej: 6-3, 6-7, 10-8)</label>
                   <input
                     type="text"
-                    required
-                    placeholder="6-3, 6-4"
+                    id="resPGan"
+                    placeholder="6-3, 6-7, 10-8"
                     value={setsGanadores}
                     onChange={e => setSetsGanadores(e.target.value)}
                     className="input-base"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Sets Perdedor (ej: 3-6, 5-7)
-                  </label>
+                  <label className="block text-[10px] text-slate-500 mb-1">Sets Perdedor (ej: 3-6, 7-6, 8-10)</label>
                   <input
                     type="text"
+                    id="resPPer"
                     required
-                    placeholder="3-6, 4-6"
+                    placeholder="3-6, 7-6, 8-10"
                     value={setsPerdedores}
                     onChange={e => setSetsPerdedores(e.target.value)}
                     className="input-base"

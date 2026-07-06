@@ -91,9 +91,9 @@ h1, h2, h3, .font-kanit {
 }
 .btn-primary:hover {
   box-shadow: var(--shadow-hero);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active { transform: scale(0.98); }
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -116,8 +116,9 @@ h1, h2, h3, .font-kanit {
 }
 .btn-secondary:hover {
   background: #e2e8f0;
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
+.btn-secondary:active { transform: scale(0.98); }
 
 /* Input base */
 .input-base {
