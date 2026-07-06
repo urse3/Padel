@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
 import RankingMovements from '@/components/landing/RankingMovements'
-import { Trophy, Search, Flame, TrendingUp, ChevronRight } from 'lucide-react'
+import { Trophy, Search, Flame, TrendingUp, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
 interface Player {
@@ -27,22 +27,85 @@ const TABS = [
   { id: 'rachas', label: 'Rachas y Subidas', icon: TrendingUp },
 ]
 
+const TOP_COUNT = 10
+const PAGE_SIZE = 10
+
+// Colores especiales para top 3
+const topStyle: Record<number, { row: string; num: string; label: string }> = {
+  1: { row: 'bg-amber-50  border-amber-200',  num: 'text-amber-500',  label: '🥇' },
+  2: { row: 'bg-slate-50  border-slate-200',  num: 'text-slate-400',  label: '🥈' },
+  3: { row: 'bg-orange-50 border-orange-200', num: 'text-orange-400', label: '🥉' },
+}
+
 export default function RankingPublicoClient({ players }: Props) {
   const [activeTab, setActiveTab] = useState<'ranking' | 'rachas'>('ranking')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
+  // Filtrado por búsqueda (siempre sobre la lista completa)
   const filtered = players.filter(p => {
     const name = (p.full_name || p.email.split('@')[0]).toLowerCase()
     return name.includes(search.toLowerCase())
   })
 
-  const top3 = players.slice(0, 3)
-  const podioVisual = [top3[1], top3[0], top3[2]].filter(Boolean)
-  const heights = ['h-28', 'h-36', 'h-24']
-  const medals = ['🥈', '🥇', '🥉']
-  const medalColors = ['border-slate-200', 'border-amber-200', 'border-amber-100']
-  const podioBg = ['bg-slate-50', 'bg-amber-50/70', 'bg-amber-50/30']
-  const podioText = ['text-slate-700', 'text-amber-700', 'text-amber-800']
+  // Top 10 (siempre visible, sin paginar)
+  const top10 = filtered.slice(0, TOP_COUNT)
+
+  // El resto — paginado
+  const rest = filtered.slice(TOP_COUNT)
+  const totalPages = Math.ceil(rest.length / PAGE_SIZE)
+  const visibleRest = rest.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const handleSearch = (v: string) => {
+    setSearch(v)
+    setPage(1)
+  }
+
+  const getPos = (player: Player) => players.findIndex(p => p.id === player.id) + 1
+
+  const renderRow = (p: Player) => {
+    const pos = getPos(p)
+    const style = topStyle[pos] ?? { row: 'bg-white border-slate-100', num: 'text-slate-500', label: '' }
+    const isTop3 = pos <= 3
+
+    return (
+      <div
+        key={p.id}
+        className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all hover:shadow-sm ${style.row} ${isTop3 ? 'shadow-sm' : ''}`}
+      >
+        {/* Posición */}
+        <div className="w-10 flex-shrink-0 text-center">
+          {isTop3 ? (
+            <span className="text-xl">{style.label}</span>
+          ) : (
+            <span className={`text-sm font-black ${style.num}`}>#{pos}</span>
+          )}
+        </div>
+
+        {/* Avatar */}
+        <PlayerAvatar name={p.full_name || p.email} avatarUrl={p.avatar_url} nivel={p.nivel} size="sm" />
+
+        {/* Nombre + badge */}
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-slate-800 text-sm truncate">{p.full_name || p.email.split('@')[0]}</p>
+          <LevelBadge nivel={p.nivel} size="sm" />
+        </div>
+
+        {/* Stats */}
+        <div className="text-right flex-shrink-0 space-y-0.5">
+          <p className="text-lg font-black text-slate-800 font-kanit">{parseFloat(p.nivel as any).toFixed(2)}</p>
+          <div className="flex items-center justify-end gap-2 text-[10px] font-bold text-slate-400">
+            {p.racha > 0 && (
+              <span className="flex items-center gap-0.5 text-orange-500">
+                <Flame size={10} /> {p.racha}
+              </span>
+            )}
+            <span>{p.victorias ?? 0}V · {p.partidos ?? 0}P</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -69,34 +132,18 @@ export default function RankingPublicoClient({ players }: Props) {
 
       {/* TAB: RANKING GENERAL */}
       {activeTab === 'ranking' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {players.length === 0 ? (
             <div className="p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               <Trophy size={48} className="mx-auto text-slate-300 mb-4" />
               <p className="font-semibold text-slate-500">Aún no se han registrado perfiles de jugadores.</p>
               <p className="text-sm text-slate-400 mt-1">¡Únete y sé el primero en el ranking!</p>
-              <Link href="/registro" className="btn-primary mt-6 px-6 py-2.5 text-sm inline-flex">
+              <Link href="/registro" className="btn-primary mt-6 px-6 py-2.5 text-sm inline-flex items-center gap-2">
                 Únete gratis <ChevronRight size={16} />
               </Link>
             </div>
           ) : (
             <>
-              {/* Podio TOP 3 */}
-              <div className="flex items-end justify-center gap-4 sm:gap-6 max-w-sm mx-auto pt-6">
-                {podioVisual.map((p, idx) => (
-                  <div key={p.id} className="flex flex-col items-center flex-1">
-                    <div className="text-2xl mb-2">{medals[idx]}</div>
-                    <div className={`w-full ${heights[idx]} ${podioBg[idx]} border ${medalColors[idx]} rounded-2xl shadow-sm flex flex-col items-center justify-end pb-3 px-2 relative`}>
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                        <PlayerAvatar name={p.full_name || p.email} avatarUrl={p.avatar_url} nivel={p.nivel} size="md" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-700 truncate w-full text-center">{(p.full_name || p.email).split(' ')[0]}</p>
-                      <p className={`text-base font-black font-kanit ${podioText[idx]}`}>{parseFloat(p.nivel as any).toFixed(2)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
               {/* Buscador */}
               <div className="relative max-w-sm">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -104,36 +151,67 @@ export default function RankingPublicoClient({ players }: Props) {
                   type="text"
                   placeholder="Buscar jugador..."
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="input-base pl-9 py-2.5 text-sm w-full"
                 />
               </div>
 
-              {/* Lista completa */}
-              <div className="space-y-2">
-                {filtered.map((p, idx) => {
-                  const realPos = players.findIndex(pl => pl.id === p.id)
-                  const posLabel = realPos === 0 ? '🥇' : realPos === 1 ? '🥈' : realPos === 2 ? '🥉' : `#${realPos + 1}`
-                  return (
-                    <div key={p.id} className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all hover:shadow-sm ${realPos < 3 ? 'bg-amber-50/40 border-amber-100' : 'bg-white border-slate-100'}`}>
-                      <span className="text-lg w-8 text-center flex-shrink-0 font-black text-slate-500">{posLabel}</span>
-                      <PlayerAvatar name={p.full_name || p.email} avatarUrl={p.avatar_url} nivel={p.nivel} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-800 text-sm truncate">{p.full_name || p.email.split('@')[0]}</p>
-                        <LevelBadge nivel={p.nivel} size="sm" />
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-black text-slate-800 font-kanit">{parseFloat(p.nivel as any).toFixed(2)}</p>
-                        {p.racha > 0 && (
-                          <p className="text-[10px] text-orange-500 font-bold flex items-center gap-0.5 justify-end">
-                            <Flame size={11} /> {p.racha}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+              {/* Cabecera columnas */}
+              <div className="flex items-center gap-4 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span className="w-10 text-center">#</span>
+                <span className="w-8" />
+                <span className="flex-1">Jugador</span>
+                <span className="text-right">Nivel · Rachas</span>
               </div>
+
+              {/* TOP 10 */}
+              {top10.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 px-2">Top 10</p>
+                  {top10.map(renderRow)}
+                </div>
+              )}
+
+              {/* RESTO PAGINADO */}
+              {rest.length > 0 && (
+                <div className="space-y-4 pt-2 border-t border-slate-100">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 px-2">
+                    Posiciones {TOP_COUNT + 1} – {players.length}
+                  </p>
+                  <div className="space-y-2">
+                    {visibleRest.map(renderRow)}
+                  </div>
+
+                  {/* Paginación */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 pt-2">
+                      <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      >
+                        <ChevronLeft size={14} /> Anterior
+                      </button>
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        {page} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      >
+                        Siguiente <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {filtered.length === 0 && (
+                <div className="p-8 text-center text-slate-400 text-sm font-medium">
+                  No se encontraron jugadores con ese nombre.
+                </div>
+              )}
             </>
           )}
         </div>
