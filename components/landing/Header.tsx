@@ -41,16 +41,19 @@ export default function Header() {
 
           {/* Nav Links - Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <Link href="#inicio" className="hover:text-brand-600 transition-colors">
+            <Link href="/" className="hover:text-brand-600 transition-colors">
               Inicio
             </Link>
-            <Link href="#ranking" className="hover:text-brand-600 transition-colors">
+            <Link href="/comunidad/ranking" className="hover:text-brand-600 transition-colors">
               Ranking
             </Link>
-            <Link href="#torneos" className="hover:text-brand-600 transition-colors">
+            <Link href="/comunidad/torneos" className="hover:text-brand-600 transition-colors">
               Torneos
             </Link>
-            <Link href="#sobre-nosotros" className="hover:text-brand-600 transition-colors">
+            <Link href="/comunidad/partidos" className="hover:text-brand-600 transition-colors">
+              Partidos
+            </Link>
+            <Link href="/#sobre-nosotros" className="hover:text-brand-600 transition-colors">
               Sobre Nosotros
             </Link>
           </nav>
@@ -83,28 +86,35 @@ export default function Header() {
       >
         <nav className="flex flex-col gap-4 text-base font-bold text-slate-700">
           <Link
-            href="#inicio"
+            href="/"
             onClick={() => setIsMenuOpen(false)}
             className="hover:text-brand-600 transition-colors"
           >
             Inicio
           </Link>
           <Link
-            href="#ranking"
+            href="/comunidad/ranking"
             onClick={() => setIsMenuOpen(false)}
             className="hover:text-brand-600 transition-colors"
           >
             Ranking
           </Link>
           <Link
-            href="#torneos"
+            href="/comunidad/torneos"
             onClick={() => setIsMenuOpen(false)}
             className="hover:text-brand-600 transition-colors"
           >
             Torneos
           </Link>
           <Link
-            href="#sobre-nosotros"
+            href="/comunidad/partidos"
+            onClick={() => setIsMenuOpen(false)}
+            className="hover:text-brand-600 transition-colors"
+          >
+            Partidos
+          </Link>
+          <Link
+            href="/#sobre-nosotros"
             onClick={() => setIsMenuOpen(false)}
             className="hover:text-brand-600 transition-colors"
           >
