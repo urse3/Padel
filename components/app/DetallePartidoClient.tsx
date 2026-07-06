@@ -344,7 +344,7 @@ export default function DetallePartidoClient({
 
       // Actualizar el perfil y nivel Elo de los ganadores en Supabase
       for (const g of ganadores) {
-        const nuevoNivel = Math.min(10.0, g.nivel + deltaGanador)
+        const nuevoNivel = Number(Math.min(10.0, g.nivel + deltaGanador).toFixed(2))
         const { error } = await sb.rpc('incrementar_stats_jugador', {
           user_id: g.id,
           es_victoria: true,
@@ -373,7 +373,7 @@ export default function DetallePartidoClient({
 
       // Actualizar el perfil y nivel Elo de los perdedores en Supabase
       for (const p of perdedores) {
-        const nuevoNivel = Math.max(0.0, p.nivel - deltaGanador)
+        const nuevoNivel = Number(Math.max(0.0, p.nivel - deltaGanador).toFixed(2))
         const { error } = await sb.rpc('incrementar_stats_jugador', {
           user_id: p.id,
           es_victoria: false,

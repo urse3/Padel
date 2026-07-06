@@ -23,12 +23,15 @@ export function getLevelInfo(nivel: number): NivelInfo {
   return               { label: 'Élite Mundial',  categoria: 'Élite',        emoji: '👑', color: '#16a34a', bgColor: '#f0fdf4', nextLevel: 10.0 }
 }
 
-// K-factor: varía por nivel (más volatilidad para niveles bajos)
+// K-factor: varía por nivel (cada vez es más complicado subir)
 function getKFactor(nivel: number): number {
   if (nivel < 3.0) return 0.50
-  if (nivel < 5.0) return 0.40
-  if (nivel < 7.0) return 0.30
-  return 0.20
+  if (nivel < 5.0) return 0.35
+  if (nivel < 6.0) return 0.20
+  if (nivel < 7.0) return 0.10
+  if (nivel < 8.0) return 0.05
+  if (nivel < 9.0) return 0.02
+  return 0.01 // Nivel > 9 (casi imposible subir)
 }
 
 export function calcularElo(
@@ -43,7 +46,7 @@ export function calcularElo(
   const expected = 1.0 / (1.0 + Math.pow(10, (nivelPerPromedio - nivelGanPromedio) / 4))
   
   let delta = K * (1 - expected) * multiplicador
-  delta = Math.max(0.05, Math.min(0.40 * multiplicador, delta))
+  // Permitimos deltas mínimos más pequeños en niveles altos, y forzamos siempre 2 decimales
   delta = Math.round(delta * 100) / 100
 
   return {
