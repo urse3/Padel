@@ -149,7 +149,7 @@
   ============================================================ -->
   <div id="authScreen" class="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fade-in">
 
-    <!-- Logo hero (Con las costuras azules y estela) -->
+    <!-- Logo hero -->
     <div class="mb-8 text-center flex flex-col items-center">
       <svg class="w-36 h-36 mb-2" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
         <!-- Estela dinámica -->
@@ -240,7 +240,7 @@
     <!-- ——— HEADER ——— -->
     <header class="sticky top-0 z-40 glass-card border-b border-slate-200 px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <!-- Icono miniatura SVG (Con las costuras azules) -->
+        <!-- Icono miniatura SVG -->
         <svg class="w-8 h-8" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M48 148L64 132" stroke="#22c55e" stroke-width="12" stroke-linecap="round"/>
           <path d="M70 126C60 116 57 101 62 88C67 75 79 67 93 65C108 63 122 71 126 84C130 97 126 112 116 120L70 126Z" stroke="#22c55e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
@@ -485,7 +485,7 @@
 
           <!-- Modificar Jugador -->
           <div class="border-b border-slate-100 pb-5 mb-5">
-            <h3 class="font-bold text-sm text-slate-800 mb-3">✏️ Editar Jugador</h3>
+            <h3 class="font-bold text-sm text-slate-800 mb-3">✏️ Editar Perfil de Jugador</h3>
             <div class="space-y-3">
               <div>
                 <label class="block text-xs text-slate-500 mb-1.5">Seleccionar Jugador</label>
@@ -493,14 +493,34 @@
                   <option value="">Seleccionar jugador…</option>
                 </select>
               </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1.5">Nombre Completo</label>
+                <input type="text" id="adminPlayerName" placeholder="Nombre completo" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+              </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs text-slate-500 mb-1.5">Nombre</label>
-                  <input type="text" id="adminPlayerName" placeholder="Nombre completo" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                  <label class="block text-xs text-slate-500 mb-1.5">Nivel Elo (1.00 - 7.00)</label>
+                  <input type="number" id="adminPlayerLevel" step="0.01" min="1" max="7" placeholder="3.00" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
                 </div>
                 <div>
-                  <label class="block text-xs text-slate-500 mb-1.5">Nivel (1.00 - 7.00)</label>
-                  <input type="number" id="adminPlayerLevel" step="0.01" min="1" max="7" placeholder="3.00" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                  <label class="block text-xs text-slate-500 mb-1.5">Partidos Jugados</label>
+                  <input type="number" id="adminPlayerPartidos" min="0" placeholder="0" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5">Victorias</label>
+                  <input type="number" id="adminPlayerVictorias" min="0" placeholder="0" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5">Derrotas</label>
+                  <input type="number" id="adminPlayerDerrotas" min="0" placeholder="0" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5">Racha (+ Vic / - Der)</label>
+                  <input type="number" id="adminPlayerRacha" placeholder="0" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1.5">Racha Máxima</label>
+                  <input type="number" id="adminPlayerRachaMax" min="0" placeholder="0" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
                 </div>
               </div>
               <button onclick="handleAdminUpdatePlayer()" id="adminUpdatePlayerBtn" class="btn-primary w-full rounded-xl py-3 text-xs font-bold mt-2">
@@ -510,11 +530,65 @@
             </div>
           </div>
 
-          <!-- Eliminar Partido -->
+          <!-- Formulario de Edición de Partido (Oculto por defecto, se activa al hacer clic en Editar) -->
+          <div id="adminEditPartidoForm" class="hidden border-b border-slate-100 pb-5 mb-5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm text-slate-800">📝 Editar Partido</h3>
+              <button onclick="cancelarEdicionPartido()" class="text-xs text-slate-500 hover:text-slate-900 font-semibold">Cancelar</button>
+            </div>
+            <input type="hidden" id="editPartidoId" />
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1.5">Fecha</label>
+                <input type="date" id="editPFecha" class="form-input w-full rounded-xl px-4 py-3 text-sm" />
+              </div>
+              
+              <!-- Pareja Ganadora -->
+              <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                <div class="col-span-2 text-[10px] font-bold text-green-600 uppercase">Pareja Ganadora</div>
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">Jugador 1</label>
+                  <select id="editPGanador1" class="form-input w-full rounded-lg px-2 py-2 text-xs bg-white"></select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">Jugador 2</label>
+                  <select id="editPGanador2" class="form-input w-full rounded-lg px-2 py-2 text-xs bg-white"></select>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-500 mb-1">Sets Ganados (ej: 6-3, 7-5)</label>
+                  <input type="text" id="editPSetsGan" placeholder="6-3, 7-5" class="form-input w-full rounded-lg px-2.5 py-2 text-xs" />
+                </div>
+              </div>
+
+              <!-- Pareja Perdedora -->
+              <div class="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                <div class="col-span-2 text-[10px] font-bold text-red-600 uppercase">Pareja Perdedora</div>
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">Jugador 1</label>
+                  <select id="editPPerdedor1" class="form-input w-full rounded-lg px-2 py-2 text-xs bg-white"></select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-500 mb-1">Jugador 2</label>
+                  <select id="editPPerdedor2" class="form-input w-full rounded-lg px-2 py-2 text-xs bg-white"></select>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-500 mb-1">Sets Perdidos (ej: 3-6, 5-7)</label>
+                  <input type="text" id="editPSetsPer" placeholder="3-6, 5-7" class="form-input w-full rounded-lg px-2.5 py-2 text-xs" />
+                </div>
+              </div>
+              
+              <button onclick="handleAdminSavePartido()" id="adminSavePartidoBtn" class="btn-primary w-full rounded-xl py-3 text-xs font-bold mt-2">
+                Guardar Cambios del Partido
+              </button>
+              <div id="adminEditPartidoMsg" class="mt-2 hidden text-xs text-center rounded-lg py-2"></div>
+            </div>
+          </div>
+
+          <!-- Gestión de Partidos -->
           <div>
-            <h3 class="font-bold text-sm text-slate-800 mb-3">🗑️ Eliminar Partido</h3>
+            <h3 class="font-bold text-sm text-slate-800 mb-3">🎮 Gestión de Partidos</h3>
             <p class="text-[10px] text-slate-400 mb-3">
-              * Nota: Eliminar un partido borrará el registro del historial, pero no recalculará automáticamente los niveles. Puedes reajustar los niveles de los jugadores arriba.
+              * Nota: Si editas o eliminas un partido, los cambios afectarán al historial. Ajusta manualmente los niveles de los jugadores arriba si necesitas corregir variaciones de Elo previas.
             </p>
             <div id="adminPartidosList" class="space-y-2 max-h-60 overflow-y-auto pr-1">
               <div class="text-center py-4 text-xs text-slate-400">Cargando partidos…</div>
@@ -600,6 +674,7 @@
   let currentProfile = null;
   let allPlayers     = [];
   let allPartidos    = [];
+  let globalPartidosList = []; // Almacena los partidos globales para la edición rápida
 
   // ================================================================
   // UTILIDADES
@@ -733,7 +808,6 @@
     currentProfile = data;
     renderProfile(data);
 
-    // Si es administrador, mostrar la pestaña de navegación correspondiente
     if (currentProfile && currentProfile.is_admin) {
       document.getElementById('navAdmin').classList.remove('hidden');
     } else {
@@ -898,7 +972,6 @@
         allPlayers.map(p => `<option value="${p.id}">${p.full_name || p.email} (${parseFloat(p.nivel).toFixed(2)})</option>`).join('');
       sel.value = cur;
     });
-    // Preview automático
     selects.forEach(sid => {
       document.getElementById(sid).addEventListener('change', updateDeltaPreview);
     });
@@ -927,7 +1000,7 @@
   }
 
   // ================================================================
-  // GUARDAR PARTIDO
+  // GUARDAR PARTIDO (USUARIO NORMAL)
   // ================================================================
   async function handleGuardarPartido(e) {
     e.preventDefault();
@@ -942,7 +1015,6 @@
     const sP  = document.getElementById('pSetsPer').value.trim();
     const fecha = document.getElementById('pFecha').value || new Date().toISOString().split('T')[0];
 
-    // Validaciones
     const ids = [g1, g2, p1, p2].filter(Boolean);
     if (ids.length < 4) return showMessage('partidoMsg', 'Selecciona los 4 jugadores.');
     if (new Set(ids).size < 4) return showMessage('partidoMsg', 'Un jugador no puede aparecer dos veces.');
@@ -968,7 +1040,6 @@
       showMessage('partidoMsg', '✅ Partido guardado y niveles actualizados.', 'success');
       document.getElementById('partidoForm').reset();
       document.getElementById('deltaPreview').classList.add('hidden');
-      // Recargar datos
       await loadProfile(currentUser.id);
       await loadAllPlayers();
     }
@@ -978,7 +1049,7 @@
   }
 
   // ================================================================
-  // SECCIÓN: ADMINISTRACIÓN
+  // SECCIÓN: ADMINISTRACIÓN (EDICIÓN DE PERFILES Y PARTIDOS)
   // ================================================================
   function populateAdminPlayersSelect() {
     const select = document.getElementById('adminPlayerSelect');
@@ -993,22 +1064,44 @@
     if (!id) {
       document.getElementById('adminPlayerName').value = '';
       document.getElementById('adminPlayerLevel').value = '';
+      document.getElementById('adminPlayerPartidos').value = '';
+      document.getElementById('adminPlayerVictorias').value = '';
+      document.getElementById('adminPlayerDerrotas').value = '';
+      document.getElementById('adminPlayerRacha').value = '';
+      document.getElementById('adminPlayerRachaMax').value = '';
       return;
     }
-    const player = allPlayers.find(p => p.id === id);
-    if (player) {
-      document.getElementById('adminPlayerName').value = player.full_name || '';
-      document.getElementById('adminPlayerLevel').value = parseFloat(player.nivel).toFixed(2);
-    }
+    
+    // Carga los datos detallados del perfil del jugador seleccionado
+    sb.from('profiles').select('*').eq('id', id).single().then(({ data, error }) => {
+      if (error) {
+        console.error('Error al obtener perfil en admin:', error);
+        return;
+      }
+      if (data) {
+        document.getElementById('adminPlayerName').value = data.full_name || '';
+        document.getElementById('adminPlayerLevel').value = parseFloat(data.nivel).toFixed(2);
+        document.getElementById('adminPlayerPartidos').value = data.partidos || 0;
+        document.getElementById('adminPlayerVictorias').value = data.victorias || 0;
+        document.getElementById('adminPlayerDerrotas').value = data.derrotas || 0;
+        document.getElementById('adminPlayerRacha').value = data.racha || 0;
+        document.getElementById('adminPlayerRachaMax').value = data.racha_max || 0;
+      }
+    });
   }
 
   async function handleAdminUpdatePlayer() {
     const id = document.getElementById('adminPlayerSelect').value;
     const name = document.getElementById('adminPlayerName').value.trim();
     const levelVal = document.getElementById('adminPlayerLevel').value;
+    const partidosVal = document.getElementById('adminPlayerPartidos').value;
+    const victoriasVal = document.getElementById('adminPlayerVictorias').value;
+    const derrotasVal = document.getElementById('adminPlayerDerrotas').value;
+    const rachaVal = document.getElementById('adminPlayerRacha').value;
+    const rachaMaxVal = document.getElementById('adminPlayerRachaMax').value;
 
-    if (!id || !name || !levelVal) {
-      return showMessage('adminPlayerMsg', 'Completa todos los campos');
+    if (!id || !name || !levelVal || !partidosVal || !victoriasVal || !derrotasVal || rachaVal === '' || !rachaMaxVal) {
+      return showMessage('adminPlayerMsg', 'Por favor, completa todos los campos del jugador.');
     }
 
     const level = parseFloat(levelVal);
@@ -1022,13 +1115,21 @@
 
     const { error } = await sb
       .from('profiles')
-      .update({ full_name: name, nivel: level })
+      .update({ 
+        full_name: name, 
+        nivel: level,
+        partidos: parseInt(partidosVal),
+        victorias: parseInt(victoriasVal),
+        derrotas: parseInt(derrotasVal),
+        racha: parseInt(rachaVal),
+        racha_max: parseInt(rachaMaxVal)
+      })
       .eq('id', id);
 
     if (error) {
       showMessage('adminPlayerMsg', `Error: ${error.message}`);
     } else {
-      showMessage('adminPlayerMsg', '✅ Datos del jugador actualizados', 'success');
+      showMessage('adminPlayerMsg', '✅ Perfil del jugador actualizado correctamente', 'success');
       await loadAllPlayers();
       await loadRanking();
       await loadProfile(currentUser.id);
@@ -1044,7 +1145,7 @@
 
     populateAdminPlayersSelect();
 
-    // Cargar últimos 15 partidos
+    // Carga los 15 últimos partidos en el gestor de administración
     const { data, error } = await sb
       .from('partidos')
       .select('*')
@@ -1056,6 +1157,8 @@
       container.innerHTML = `<div class="text-red-500 text-xs text-center py-4">Error al cargar partidos</div>`;
       return;
     }
+
+    globalPartidosList = data || [];
 
     if (!data.length) {
       container.innerHTML = `<div class="text-slate-400 text-xs text-center py-4">No hay partidos registrados</div>`;
@@ -1070,17 +1173,104 @@
       const date = new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 
       return `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 shadow-sm text-xs">
-          <div class="min-w-0 flex-1 pr-2">
+        <div class="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 shadow-sm text-xs gap-2">
+          <div class="min-w-0 flex-1">
             <p class="font-semibold text-slate-800 truncate">🟢 ${pG1} / ${pG2}</p>
             <p class="text-slate-500 truncate">🔴 ${pP1} / ${pP2}</p>
             <p class="text-[10px] text-slate-400 mt-0.5">${date} · Sets: ${p.sets_ganadores} vs ${p.sets_perdedores}</p>
           </div>
-          <button onclick="handleAdminDeletePartido('${p.id}')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-bold text-[10px] flex-shrink-0 transition-colors">
-            Eliminar
-          </button>
+          <div class="flex gap-1.5 flex-shrink-0">
+            <button onclick="handleAdminEditPartido('${p.id}')" class="px-2 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg font-bold text-[10px] transition-colors">
+              Editar
+            </button>
+            <button onclick="handleAdminDeletePartido('${p.id}')" class="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-bold text-[10px] transition-colors">
+              Eliminar
+            </button>
+          </div>
         </div>`;
     }).join('');
+  }
+
+  function handleAdminEditPartido(partidoId) {
+    const partido = globalPartidosList.find(p => p.id === partidoId);
+    if (!partido) return;
+
+    document.getElementById('editPartidoId').value = partidoId;
+    document.getElementById('editPFecha').value = partido.fecha;
+    document.getElementById('editPSetsGan').value = partido.sets_ganadores;
+    document.getElementById('editPSetsPer').value = partido.sets_perdedores;
+
+    const selects = ['editPGanador1', 'editPGanador2', 'editPPerdedor1', 'editPPerdedor2'];
+    const selectedValues = [partido.ganador_1_id, partido.ganador_2_id, partido.perdedor_1_id, partido.perdedor_2_id];
+
+    selects.forEach((sid, idx) => {
+      const sel = document.getElementById(sid);
+      sel.innerHTML = '<option value="">Seleccionar jugador…</option>' +
+        allPlayers.map(p => `<option value="${p.id}">${p.full_name || p.email} (${parseFloat(p.nivel).toFixed(2)})</option>`).join('');
+      sel.value = selectedValues[idx] || '';
+    });
+
+    document.getElementById('adminEditPartidoForm').classList.remove('hidden');
+    document.getElementById('adminEditPartidoForm').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cancelarEdicionPartido() {
+    document.getElementById('adminEditPartidoForm').classList.add('hidden');
+    document.getElementById('adminEditPartidoMsg').classList.add('hidden');
+  }
+
+  async function handleAdminSavePartido() {
+    const partidoId = document.getElementById('editPartidoId').value;
+    const fecha = document.getElementById('editPFecha').value;
+    const g1 = document.getElementById('editPGanador1').value;
+    const g2 = document.getElementById('editPGanador2').value;
+    const p1 = document.getElementById('editPPerdedor1').value;
+    const p2 = document.getElementById('editPPerdedor2').value;
+    const setsGan = document.getElementById('editPSetsGan').value.trim();
+    const setsPer = document.getElementById('editPSetsPer').value.trim();
+
+    if (!partidoId || !fecha || !g1 || !g2 || !p1 || !p2 || !setsGan || !setsPer) {
+      return showMessage('adminEditPartidoMsg', 'Por favor, completa todos los campos del partido.');
+    }
+
+    const ids = [g1, g2, p1, p2].filter(Boolean);
+    if (new Set(ids).size < 4) {
+      return showMessage('adminEditPartidoMsg', 'Los 4 jugadores seleccionados deben ser distintos.');
+    }
+
+    const btn = document.getElementById('adminSavePartidoBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando cambios…';
+
+    const { error } = await sb
+      .from('partidos')
+      .update({
+        fecha,
+        ganador_1_id: g1,
+        ganador_2_id: g2,
+        perdedor_1_id: p1,
+        perdedor_2_id: p2,
+        sets_ganadores: setsGan,
+        sets_perdedores: setsPer
+      })
+      .eq('id', partidoId);
+
+    if (error) {
+      showMessage('adminEditPartidoMsg', `Error: ${error.message}`);
+    } else {
+      showMessage('adminEditPartidoMsg', '✅ Partido editado con éxito en la base de datos', 'success');
+      setTimeout(() => {
+        cancelarEdicionPartido();
+      }, 1500);
+      
+      await loadProfile(currentUser.id);
+      await loadAllPlayers();
+      await loadRanking();
+      loadAdminData();
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar Cambios del Partido';
   }
 
   async function handleAdminDeletePartido(partidoId) {
@@ -1133,7 +1323,6 @@
       });
     }
 
-    // Lazy load
     if (name === 'ranking') loadRanking();
     if (name === 'perfil' && currentUser) {
       loadProfile(currentUser.id);
