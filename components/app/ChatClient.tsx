@@ -119,8 +119,8 @@ export default function ChatClient({ currentUserId, amigo, initialMessages }: Ch
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 relative pb-[72px]">
-      
+    <div className="flex flex-col h-[100dvh] bg-slate-50 relative">
+
       {/* Header fijo superior */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -139,8 +139,8 @@ export default function ChatClient({ currentUserId, amigo, initialMessages }: Ch
         </div>
       </header>
 
-      {/* Área de Mensajes */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Área de Mensajes — padding inferior para el input + bottom nav */}
+      <main className="flex-1 overflow-y-auto p-4 pb-36 space-y-4">
         {mensajes.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
             <p className="text-sm font-semibold mb-2">Comienza una conversación con {amigo.full_name || amigo.email.split('@')[0]}</p>
@@ -178,9 +178,9 @@ export default function ChatClient({ currentUserId, amigo, initialMessages }: Ch
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Input fijo abajo (antes del bottom nav) */}
-      <div className="bg-white border-t border-slate-100 p-3 pb-safe z-20" style={{ position: 'sticky', bottom: '72px' }}>
-        <form onSubmit={handleSend} className="flex gap-2 max-w-md mx-auto relative">
+      {/* Input fijo abajo (flotando sobre el bottom nav) */}
+      <div className="fixed bottom-[72px] left-0 right-0 bg-white border-t border-slate-100 p-3 z-20">
+        <form onSubmit={handleSend} className="flex gap-2 max-w-md mx-auto">
           <input
             type="text"
             value={nuevoMensaje}

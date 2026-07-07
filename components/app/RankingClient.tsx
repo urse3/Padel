@@ -30,17 +30,6 @@ export default function RankingClient({ players, currentUserId }: RankingClientP
     return name.includes(search.toLowerCase())
   })
 
-  // 2. Definir podio (Top 3 general antes de filtrar para respetar podio real)
-  const top3 = players.slice(0, 3)
-  // Reordenar para podio visual: [2º, 1º, 3º]
-  const podioVisual = [top3[1], top3[0], top3[2]].filter(Boolean)
-
-  const heights = ['h-28', 'h-36', 'h-24']
-  const medals = ['🥈', '🥇', '🥉']
-  const medalColors = ['border-slate-200', 'border-amber-200', 'border-amber-100']
-  const podioBg = ['bg-slate-50', 'bg-amber-50/70', 'bg-amber-50/30']
-  const podioText = ['text-slate-700', 'text-amber-700', 'text-amber-800']
-
   return (
     <div className="px-5 pt-6 space-y-6 animate-fade-in">
       
@@ -55,42 +44,7 @@ export default function RankingClient({ players, currentUserId }: RankingClientP
         </div>
       </div>
 
-      {/* Podio Top 3 */}
-      {players.length > 0 && (
-        <div className="flex items-end justify-center gap-4 pt-10 pb-4 bg-slate-50/40 border border-slate-100 rounded-3xl p-4 shadow-sm relative">
-          <span className="absolute top-3 left-4 text-[9px] font-black uppercase tracking-wider text-slate-400">
-            Podio de honor
-          </span>
-          {podioVisual.map((p) => {
-            const realIndex = players.findIndex(pl => pl.id === p.id)
-            const isMe = p.id === currentUserId
 
-            return (
-              <div key={p.id} className="flex flex-col items-center gap-2.5 flex-1 min-w-0">
-                <span className="text-2xl">{medals[realIndex]}</span>
-                <div
-                  className={`w-full ${heights[realIndex]} ${podioBg[realIndex]} border ${
-                    isMe ? 'border-brand-500 ring-2 ring-brand-500/20' : medalColors[realIndex]
-                  } rounded-2xl shadow-sm flex flex-col items-center justify-end pb-3 px-1.5 hover:scale-[1.03] transition-all duration-300 relative`}
-                >
-                  <PlayerAvatar
-                    name={p.full_name || p.email}
-                    avatarUrl={p.avatar_url}
-                    size="md"
-                    className="absolute -top-5 left-1/2 -translate-x-1/2 shadow-md border-2 border-white"
-                  />
-                  <p className="text-slate-800 text-[10px] sm:text-xs font-black truncate w-full text-center px-0.5">
-                    {(p.full_name || p.email).split(' ')[0]} {isMe && '(tú)'}
-                  </p>
-                  <p className={`text-sm sm:text-base font-black font-kanit mt-0.5 ${podioText[realIndex]}`}>
-                    {(p.nivel || 1.0).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
 
       {/* Buscador */}
       <div className="relative">
