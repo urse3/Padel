@@ -24,13 +24,13 @@ export default function Footer() {
           <h4 className="font-bold font-kanit text-sm text-brand-400 uppercase tracking-widest">Plataforma</h4>
           <ul className="space-y-2.5 text-xs text-slate-400 font-semibold">
             <li>
-              <Link href="#inicio" className="hover:text-white transition-colors">Inicio</Link>
+              <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
             </li>
             <li>
-              <Link href="#ranking" className="hover:text-white transition-colors">Ranking General</Link>
+              <Link href="/comunidad/ranking" className="hover:text-white transition-colors">Ranking General</Link>
             </li>
             <li>
-              <Link href="#torneos" className="hover:text-white transition-colors">Torneos Activos</Link>
+              <Link href="/comunidad/torneos" className="hover:text-white transition-colors">Torneos Activos</Link>
             </li>
             <li>
               <Link href="/login" className="hover:text-white transition-colors">Área Privada</Link>
