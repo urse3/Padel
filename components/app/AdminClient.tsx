@@ -423,26 +423,43 @@ export default function AdminClient({
   const [pNombre, setPNombre] = useState('')
   const [pPared, setPPared] = useState<'cristal'|'muro'>('cristal')
   const [pTecho, setPTecho] = useState<'cubierta'|'descubierta'>('cubierta')
+  const [editingPistaId, setEditingPistaId] = useState<string | null>(null)
 
   const handleCreatePista = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    const { error } = await sb
-      .from('pistas')
-      .insert({
-        nombre: pNombre.trim(),
-        tipo_pared: pPared,
-        tipo_techo: pTecho
-      })
+    let error
+
+    if (editingPistaId) {
+      const { error: updateError } = await sb
+        .from('pistas')
+        .update({
+          nombre: pNombre.trim(),
+          tipo_pared: pPared,
+          tipo_techo: pTecho
+        })
+        .eq('id', editingPistaId)
+      error = updateError
+    } else {
+      const { error: insertError } = await sb
+        .from('pistas')
+        .insert({
+          nombre: pNombre.trim(),
+          tipo_pared: pPared,
+          tipo_techo: pTecho
+        })
+      error = insertError
+    }
 
     if (error) {
-      alert(`Error al crear pista: ${error.message}`)
+      alert(`Error al guardar pista: ${error.message}`)
     } else {
-      alert('🎾 Pista creada con éxito')
+      alert(editingPistaId ? '🎾 Pista actualizada con éxito' : '🎾 Pista creada con éxito')
       setPNombre('')
       setPPared('cristal')
       setPTecho('cubierta')
+      setEditingPistaId(null)
       router.refresh()
     }
     setLoading(false)
@@ -967,9 +984,25 @@ export default function AdminClient({
       {activeTab === 'pistas' && (
         <div className="space-y-6">
           <form onSubmit={handleCreatePista} className="card p-5 bg-white space-y-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-1.5">
-              <Plus size={14} /> Crear Nueva Pista
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Plus size={14} /> {editingPistaId ? 'Editar Pista' : 'Crear Nueva Pista'}
+              </h3>
+              {editingPistaId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPNombre('')
+                    setPPared('cristal')
+                    setPTecho('cubierta')
+                    setEditingPistaId(null)
+                  }}
+                  className="text-[10px] text-slate-400 font-bold hover:text-slate-600"
+                >
+                  Cancelar Edición
+                </button>
+              )}
+            </div>
 
             <div className="space-y-3">
               <div>
@@ -1021,7 +1054,7 @@ export default function AdminClient({
                 disabled={loading}
                 className="btn-primary w-full py-3.5 text-xs font-bold justify-center shadow-green flex items-center gap-1.5"
               >
-                <Save size={14} /> Guardar Pista
+                <Save size={14} /> {editingPistaId ? 'Guardar Cambios' : 'Guardar Pista'}
               </button>
             </div>
           </form>
@@ -1048,6 +1081,18 @@ export default function AdminClient({
                         </span>
                       </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        setPNombre(p.nombre)
+                        setPPared(p.tipo_pared)
+                        setPTecho(p.tipo_techo)
+                        setEditingPistaId(p.id)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className="p-2 bg-slate-50 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-slate-100"
+                    >
+                      <Settings size={14} />
+                    </button>
                   </div>
                 ))}
               </div>

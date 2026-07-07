@@ -5,7 +5,7 @@ import ChatClient from '@/components/app/ChatClient'
 
 export const revalidate = 0
 
-export default async function ChatPage({ params }: { params: { id: string } }) {
+export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const sb = await createClient()
 
   const {
@@ -16,7 +16,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
     redirect('/login')
   }
 
-  const amigoId = params.id
+  const resolvedParams = await params
+  const amigoId = resolvedParams.id
 
   // 1. Verificar que el amigo exista
   const { data: amigo } = await sb
