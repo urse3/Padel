@@ -75,6 +75,12 @@ export default async function AdminPage() {
     .select('*')
     .order('nombre', { ascending: true })
 
+  // 8. Cargar incidencias
+  const { data: incidencias } = await sb
+    .from('incidencias')
+    .select('*')
+    .order('created_at', { ascending: false })
+
   return (
     <AdminClient
       jugadores={jugadores || []}
@@ -82,6 +88,7 @@ export default async function AdminPage() {
       partidosTorneo={partidosTorneo || []}
       inscripcionesTorneos={inscripcionesTorneos || []}
       pistas={pistas || []}
+      incidencias={incidencias || []}
       currentUserId={user.id}
     />
   )

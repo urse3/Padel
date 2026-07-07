@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import LevelBadge from '@/components/LevelBadge'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Search, UserPlus, UserCheck, UserX, Clock } from 'lucide-react'
+import { Users, Search, UserPlus, UserCheck, UserX, Clock, MessageCircle } from 'lucide-react'
 
 interface Usuario {
   id: string
@@ -186,7 +187,12 @@ export default function AmigosClient({ relaciones, todosUsuarios, currentUserId 
                       <p className="text-xs font-bold text-slate-800">{a.full_name || a.email.split('@')[0]}</p>
                     </div>
                   </div>
-                  <LevelBadge nivel={parseFloat(a.nivel as any)} size="sm" />
+                  <div className="flex items-center gap-3">
+                    <LevelBadge nivel={parseFloat(a.nivel as any)} size="sm" />
+                    <Link href={`/amigos/${a.id}/chat`} className="p-2 bg-slate-100 text-brand-600 rounded-xl hover:bg-brand-50 transition-colors">
+                      <MessageCircle size={16} />
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>

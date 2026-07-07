@@ -78,12 +78,23 @@ interface Pista {
   created_at?: string
 }
 
+interface Incidencia {
+  id: string
+  nombre: string
+  email: string
+  tipo: string
+  mensaje: string
+  estado: string
+  created_at: string
+}
+
 interface AdminClientProps {
   jugadores: Jugador[]
   torneos: Torneo[]
   partidosTorneo: PartidoTorneo[]
   inscripcionesTorneos: InscripcionTorneo[]
   pistas: Pista[]
+  incidencias: Incidencia[]
   currentUserId: string
 }
 
@@ -92,9 +103,10 @@ export default function AdminClient({
   torneos,
   partidosTorneo,
   inscripcionesTorneos,
-  pistas
+  pistas,
+  incidencias
 }: AdminClientProps) {
-  const [activeTab, setActiveTab] = useState<'jugadores' | 'torneos' | 'anuncios' | 'pistas'>('jugadores')
+  const [activeTab, setActiveTab] = useState<'jugadores' | 'torneos' | 'anuncios' | 'pistas' | 'incidencias'>('jugadores')
   const [loading, setLoading] = useState(false)
   
   const router = useRouter()
@@ -483,6 +495,14 @@ export default function AdminClient({
           }`}
         >
           Pistas
+        </button>
+        <button
+          onClick={() => setActiveTab('incidencias')}
+          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
+            activeTab === 'incidencias' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
+          }`}
+        >
+          Incidencias
         </button>
       </div>
 
@@ -1027,6 +1047,48 @@ export default function AdminClient({
                           {p.tipo_techo}
                         </span>
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB INCIDENCIAS */}
+      {activeTab === 'incidencias' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="card p-5 bg-white shadow-sm border border-slate-100">
+            <h2 className="text-sm font-extrabold text-slate-800 font-kanit mb-4 flex items-center gap-2">
+              <Megaphone className="text-brand-600" size={18} /> Buzón de Contacto
+            </h2>
+            {incidencias.length === 0 ? (
+              <div className="text-center p-8 text-slate-400">
+                <Check size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">No hay mensajes pendientes.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {incidencias.map(inc => (
+                  <div key={inc.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-800">{inc.nombre}</h4>
+                        <a href={`mailto:${inc.email}`} className="text-[11px] text-brand-600 font-medium hover:underline">{inc.email}</a>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-widest ${
+                        inc.tipo === 'incidencia_tecnica' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {inc.tipo.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-100">
+                      {inc.mensaje}
+                    </p>
+                    <div className="flex justify-between items-center pt-2 text-[10px] text-slate-400 font-semibold">
+                      <span>{new Date(inc.created_at).toLocaleDateString()}</span>
+                      <span className="uppercase tracking-widest">{inc.estado}</span>
                     </div>
                   </div>
                 ))}

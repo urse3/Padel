@@ -89,6 +89,12 @@ export default function DetallePartidoClient({
   const [setsPerdedores, setSetsPerdedores] = useState('')
   const [parejaGanadora, setParejaGanadora] = useState<'ganadores' | 'perdedores'>('ganadores')
 
+  // Estados para invitar amigos
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [amigosToInvite, setAmigosToInvite] = useState<any[]>([])
+  const [loadingAmigos, setLoadingAmigos] = useState(false)
+  const [inviteStatus, setInviteStatus] = useState<{ id: string; status: 'sending' | 'sent' | 'error' }[]>([])
+
   const router = useRouter()
   const sb = createClient()
 
@@ -420,6 +426,51 @@ export default function DetallePartidoClient({
   const timeStr = formatTime(partido.hora)
   const isFinalizado = partido.estado === 'finalizado'
 
+  const handleLoadAmigos = async () => {
+    setShowInviteModal(true)
+    if (amigosToInvite.length > 0) return
+    
+    setLoadingAmigos(true)
+    // Cargar amigos donde el usuario actual es solicitante o receptor y el estado es aceptada
+    const { data: relaciones } = await sb
+      .from('amigos')
+      .select('solicitante:solicitante_id(id, full_name, email, avatar_url, nivel), receptor:receptor_id(id, full_name, email, avatar_url, nivel)')
+      .or(`solicitante_id.eq.${currentUserId},receptor_id.eq.${currentUserId}`)
+      .eq('estado', 'aceptada')
+
+    if (relaciones) {
+      const amigos = relaciones.map(r => {
+        const sol = r.solicitante as any
+        const rec = r.receptor as any
+        return sol.id === currentUserId ? rec : sol
+      })
+      setAmigosToInvite(amigos)
+    }
+    setLoadingAmigos(false)
+  }
+
+  const handleInviteFriend = async (amigoId: string) => {
+    if (!currentUserId) return
+    setInviteStatus(prev => [...prev.filter(s => s.id !== amigoId), { id: amigoId, status: 'sending' }])
+    
+    const enlacePartido = `${window.location.origin}/comunidad/partidos/${partido.id}`
+    const mensajeTexto = `¡Hola! Te invito a unirte a mi partido el ${formatDateShort(partido.fecha)} a las ${formatTime(partido.hora)} en ${partido.club}. Únete aquí: ${enlacePartido}`
+
+    const { error } = await sb
+      .from('mensajes_directos')
+      .insert({
+        emisor_id: currentUserId,
+        receptor_id: amigoId,
+        contenido: mensajeTexto
+      })
+
+    if (error) {
+      setInviteStatus(prev => [...prev.filter(s => s.id !== amigoId), { id: amigoId, status: 'error' }])
+    } else {
+      setInviteStatus(prev => [...prev.filter(s => s.id !== amigoId), { id: amigoId, status: 'sent' }])
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       
@@ -497,6 +548,18 @@ export default function DetallePartidoClient({
               <span>Nivel Requerido: {partido.nivel_min.toFixed(2)} - {partido.nivel_max.toFixed(2)}</span>
             </div>
           </div>
+
+          {/* Botón Invitar Amigos (solo para registrados) */}
+          {currentUserId && !isFinalizado && (
+            <div className="pt-2 pb-1 border-t border-slate-100">
+              <button
+                onClick={handleLoadAmigos}
+                className="btn-secondary w-full py-2.5 text-[10px] font-bold justify-center border-slate-200 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-colors"
+              >
+                <UserPlus size={14} /> Invitar Amigos
+              </button>
+            </div>
+          )}
 
           {/* Botones principales de Inscripción */}
           {!isFinalizado && (
@@ -806,6 +869,72 @@ export default function DetallePartidoClient({
                 </button>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Invitar Amigos */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="card w-full max-w-sm p-6 bg-white shadow-xl space-y-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-extrabold text-slate-900 font-kanit tracking-tight">
+                <UserPlus className="inline-block mr-2 text-brand-600" size={18} />
+                Invitar Amigos
+              </h3>
+              <button onClick={() => setShowInviteModal(false)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 transition-colors">
+                <span className="sr-only">Cerrar</span>
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-[200px] pr-2">
+              {loadingAmigos ? (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-semibold">
+                  Cargando amigos...
+                </div>
+              ) : amigosToInvite.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center space-y-2">
+                  <UserPlus size={32} className="opacity-50" />
+                  <p className="text-sm font-semibold">No tienes amigos en tu lista.</p>
+                  <Link href="/amigos" className="text-[10px] text-brand-600 hover:underline">
+                    Ve a Comunidad y añade algunos.
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {amigosToInvite.map(amigo => {
+                    const status = inviteStatus.find(s => s.id === amigo.id)?.status
+                    return (
+                      <div key={amigo.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
+                        <div className="flex items-center gap-3">
+                          <PlayerAvatar name={amigo.full_name || amigo.email} avatarUrl={amigo.avatar_url} size="sm" />
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{amigo.full_name || amigo.email.split('@')[0]}</p>
+                            <p className="text-[10px] text-slate-500">Nivel {amigo.nivel}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleInviteFriend(amigo.id)}
+                          disabled={!!status}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-colors flex-shrink-0 ${
+                            status === 'sent' ? 'bg-green-100 border-green-200 text-green-700' :
+                            status === 'sending' ? 'bg-slate-100 border-slate-200 text-slate-400' :
+                            status === 'error' ? 'bg-red-100 border-red-200 text-red-700' :
+                            'bg-white border-slate-200 text-brand-600 hover:bg-brand-50'
+                          }`}
+                        >
+                          {status === 'sent' ? <Check size={16} /> :
+                           status === 'sending' ? '...' :
+                           status === 'error' ? 'Error' :
+                           <Send size={16} />}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -38,21 +38,21 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Comunidad */}
+        {/* Punto de Padel (antes Comunidad) */}
         <div className="space-y-4">
-          <h4 className="font-bold font-kanit text-sm text-brand-400 uppercase tracking-widest">Comunidad</h4>
+          <h4 className="font-bold font-kanit text-sm text-brand-400 uppercase tracking-widest">Punto de Padel</h4>
           <ul className="space-y-2.5 text-xs text-slate-400 font-semibold">
             <li>
-              <Link href="#sobre-nosotros" className="hover:text-white transition-colors">Sobre Nosotros</Link>
+              <Link href="/sobre-nosotros" className="hover:text-white transition-colors">Sobre Nosotros</Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Preguntas Frecuentes</Link>
+              <Link href="/preguntas-frecuentes" className="hover:text-white transition-colors">Preguntas Frecuentes</Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Soporte técnico</Link>
+              <Link href="/soporte" className="hover:text-white transition-colors">Soporte técnico</Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Contacto</Link>
+              <Link href="/contacto" className="hover:text-white transition-colors">Contacto</Link>
             </li>
           </ul>
         </div>
@@ -62,13 +62,13 @@ export default function Footer() {
           <h4 className="font-bold font-kanit text-sm text-brand-400 uppercase tracking-widest">Legal</h4>
           <ul className="space-y-2.5 text-xs text-slate-400 font-semibold">
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Términos de servicio</Link>
+              <Link href="/legal/terminos" className="hover:text-white transition-colors">Términos de servicio</Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Política de privacidad</Link>
+              <Link href="/legal/privacidad" className="hover:text-white transition-colors">Política de privacidad</Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-white transition-colors">Aviso legal</Link>
+              <Link href="/legal/aviso-legal" className="hover:text-white transition-colors">Aviso legal</Link>
             </li>
           </ul>
         </div>
