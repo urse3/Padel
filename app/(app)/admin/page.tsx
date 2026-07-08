@@ -81,6 +81,24 @@ export default async function AdminPage() {
     .select('*')
     .order('created_at', { ascending: false })
 
+  // 9. Cargar partidos abiertos (no cancelados ni finalizados)
+  const { data: partidosAbiertos } = await sb
+    .from('partidos_abiertos')
+    .select(`
+      id, club, fecha, hora, estado, max_jugadores,
+      creador:creador_id(full_name, email)
+    `)
+    .not('estado', 'in', '("cancelado","finalizado")')
+    .order('fecha', { ascending: true })
+
+  // 10. Cargar notificaciones sin leer (con datos del perfil)
+  const { data: notificaciones } = await sb
+    .from('notificaciones')
+    .select('*, perfil:usuario_id(full_name, email)')
+    .eq('leido', false)
+    .order('created_at', { ascending: false })
+    .limit(100)
+
   return (
     <AdminClient
       jugadores={jugadores || []}
@@ -90,6 +108,8 @@ export default async function AdminPage() {
       pistas={pistas || []}
       incidencias={incidencias || []}
       currentUserId={user.id}
+      partidosAbiertos={(partidosAbiertos || []) as any}
+      notificaciones={(notificaciones || []) as any}
     />
   )
 }

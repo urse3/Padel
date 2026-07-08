@@ -16,7 +16,12 @@ import {
   Check,
   Calendar,
   Lock,
-  Swords
+  Swords,
+  Trash2,
+  XCircle,
+  Bell,
+  BellOff,
+  Send
 } from 'lucide-react'
 
 interface Jugador {
@@ -88,6 +93,27 @@ interface Incidencia {
   created_at: string
 }
 
+interface PartidoAbierto {
+  id: string
+  club: string
+  fecha: string
+  hora: string
+  estado: string
+  max_jugadores: number
+  creador: { full_name: string | null; email: string } | null
+}
+
+interface NotificacionAdmin {
+  id: string
+  usuario_id: string
+  tipo: string
+  mensaje: string
+  enlace: string | null
+  leido: boolean
+  created_at: string
+  perfil?: { full_name: string | null; email: string } | null
+}
+
 interface AdminClientProps {
   jugadores: Jugador[]
   torneos: Torneo[]
@@ -96,6 +122,8 @@ interface AdminClientProps {
   pistas: Pista[]
   incidencias: Incidencia[]
   currentUserId: string
+  partidosAbiertos?: PartidoAbierto[]
+  notificaciones?: NotificacionAdmin[]
 }
 
 export default function AdminClient({
@@ -104,9 +132,12 @@ export default function AdminClient({
   partidosTorneo,
   inscripcionesTorneos,
   pistas,
-  incidencias
+  incidencias,
+  currentUserId,
+  partidosAbiertos = [],
+  notificaciones: notificacionesInit = []
 }: AdminClientProps) {
-  const [activeTab, setActiveTab] = useState<'jugadores' | 'torneos' | 'anuncios' | 'pistas' | 'incidencias'>('jugadores')
+  const [activeTab, setActiveTab] = useState<'jugadores' | 'torneos' | 'partidos' | 'notificaciones' | 'anuncios' | 'pistas' | 'incidencias'>('jugadores')
   const [loading, setLoading] = useState(false)
   
   const router = useRouter()
@@ -386,6 +417,121 @@ export default function AdminClient({
   }
 
   // ==========================================
+  // CANCELAR TORNEO
+  // ==========================================
+  const handleCancelarTorneo = async () => {
+    if (!activeTorneoId) return
+    if (!confirm('¿Seguro que quieres cancelar este torneo? Esta acción no se puede deshacer.')) return
+    setLoading(true)
+    const { error } = await sb.from('torneos').update({ estado: 'cancelado' }).eq('id', activeTorneoId)
+    if (error) alert(`Error: ${error.message}`)
+    else { alert('Torneo cancelado.'); setActiveTorneoId(''); router.refresh() }
+    setLoading(false)
+  }
+
+  // ==========================================
+  // GESTIÓN PARTIDOS ABIERTOS
+  // ==========================================
+  const [localPartidos, setLocalPartidos] = useState<PartidoAbierto[]>(partidosAbiertos)
+
+  const handleCancelarPartido = async (id: string) => {
+    if (!confirm('¿Cancelar este partido abierto? No se puede deshacer.')) return
+    setLoading(true)
+    const { error } = await sb.from('partidos_abiertos').update({ estado: 'cancelado' }).eq('id', id)
+    if (error) alert(`Error: ${error.message}`)
+    else {
+      setLocalPartidos(prev => prev.filter(p => p.id !== id))
+      alert('Partido cancelado.')
+    }
+    setLoading(false)
+  }
+
+  const handleEliminarPartido = async (id: string) => {
+    if (!confirm('¿Eliminar definitivamente este partido? Se borrarán todas sus inscripciones.')) return
+    setLoading(true)
+    const { error } = await sb.from('partidos_abiertos').delete().eq('id', id)
+    if (error) alert(`Error: ${error.message}`)
+    else {
+      setLocalPartidos(prev => prev.filter(p => p.id !== id))
+      alert('Partido eliminado.')
+    }
+    setLoading(false)
+  }
+
+  // ==========================================
+  // GESTIÓN NOTIFICACIONES
+  // ==========================================
+  const [localNotifs, setLocalNotifs] = useState<NotificacionAdmin[]>(notificacionesInit)
+  const [notifMensaje, setNotifMensaje] = useState('')
+  const [notifTipo, setNotifTipo] = useState<'sistema' | 'partido' | 'torneo'>('sistema')
+  const [notifEnlace, setNotifEnlace] = useState('')
+  const [notifDestinatario, setNotifDestinatario] = useState('todos')
+
+  const handleEnviarNotificacion = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!notifMensaje.trim()) return
+    setLoading(true)
+    try {
+      if (notifDestinatario === 'todos') {
+        // Enviar a todos los jugadores
+        const inserts = jugadores.map(j => ({
+          usuario_id: j.id,
+          tipo: notifTipo,
+          mensaje: notifMensaje.trim(),
+          enlace: notifEnlace.trim() || null,
+          leido: false
+        }))
+        const { error } = await sb.from('notificaciones').insert(inserts)
+        if (error) throw error
+      } else {
+        const { error } = await sb.from('notificaciones').insert({
+          usuario_id: notifDestinatario,
+          tipo: notifTipo,
+          mensaje: notifMensaje.trim(),
+          enlace: notifEnlace.trim() || null,
+          leido: false
+        })
+        if (error) throw error
+      }
+      alert('✅ Notificación enviada')
+      setNotifMensaje('')
+      setNotifEnlace('')
+      router.refresh()
+    } catch (err: any) {
+      alert(`Error: ${err.message}`)
+    }
+    setLoading(false)
+  }
+
+  const handleEliminarNotif = async (id: string) => {
+    const { error } = await sb.from('notificaciones').delete().eq('id', id)
+    if (!error) setLocalNotifs(prev => prev.filter(n => n.id !== id))
+  }
+
+  // ==========================================
+  // RESOLVER INCIDENCIAS
+  // ==========================================
+  const [localIncidencias, setLocalIncidencias] = useState(incidencias)
+
+  const handleResolverIncidencia = async (id: string) => {
+    const { error } = await sb.from('incidencias').update({ estado: 'resuelto' }).eq('id', id)
+    if (!error) setLocalIncidencias(prev => prev.map(inc => inc.id === id ? { ...inc, estado: 'resuelto' } : inc))
+    else alert(`Error: ${error.message}`)
+  }
+
+  // ==========================================
+  // ELIMINAR PISTA
+  // ==========================================
+  const [localPistas, setLocalPistas] = useState(pistas)
+
+  const handleEliminarPista = async (id: string) => {
+    if (!confirm('¿Eliminar esta pista?')) return
+    const { error } = await sb.from('pistas').delete().eq('id', id)
+    if (!error) setLocalPistas(prev => prev.filter(p => p.id !== id))
+    else alert(`Error: ${error.message}`)
+  }
+
+  // ==========================================
   // ESTADO ANUNCIOS/NOTICIAS
   // ==========================================
   const [nTitulo, setNTitulo] = useState('')
@@ -479,48 +625,27 @@ export default function AdminClient({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab('jugadores')}
-          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeTab === 'jugadores' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
-          }`}
-        >
-          Jugadores
-        </button>
-        <button
-          onClick={() => setActiveTab('torneos')}
-          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeTab === 'torneos' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
-          }`}
-        >
-          Torneos
-        </button>
-        <button
-          onClick={() => setActiveTab('anuncios')}
-          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeTab === 'anuncios' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
-          }`}
-        >
-          Anuncios
-        </button>
-        <button
-          onClick={() => setActiveTab('pistas')}
-          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeTab === 'pistas' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
-          }`}
-        >
-          Pistas
-        </button>
-        <button
-          onClick={() => setActiveTab('incidencias')}
-          className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all ${
-            activeTab === 'incidencias' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
-          }`}
-        >
-          Incidencias
-        </button>
+      {/* Tabs - scroll horizontal para caber */}
+      <div className="flex border-b border-slate-200 overflow-x-auto gap-0 -mx-1">
+        {([
+          { key: 'jugadores', label: '👤 Jugadores' },
+          { key: 'torneos', label: '🏆 Torneos' },
+          { key: 'partidos', label: '🎾 Partidos' },
+          { key: 'notificaciones', label: '🔔 Notifs' },
+          { key: 'anuncios', label: '📢 Anuncios' },
+          { key: 'pistas', label: '🏟️ Pistas' },
+          { key: 'incidencias', label: '📩 Buzón' }
+        ] as const).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-shrink-0 px-3 pb-3 text-[10px] font-bold text-center border-b-2 transition-all whitespace-nowrap ${
+              activeTab === tab.key ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-400'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* TAB JUGADORES */}
@@ -847,6 +972,14 @@ export default function AdminClient({
                       >
                         <Play size={14} /> Iniciar Torneo y Generar Brackets
                       </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelarTorneo}
+                        disabled={loading}
+                        className="w-full py-3 text-xs font-bold justify-center flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl hover:bg-red-100 transition-colors"
+                      >
+                        <XCircle size={14} /> Cancelar Torneo
+                      </button>
                     </div>
                   )}
 
@@ -911,11 +1044,192 @@ export default function AdminClient({
                     </div>
                   )}
 
+                  {/* Estado: CANCELADO */}
+                  {activeTorneo.estado === 'cancelado' && (
+                    <div className="p-3 bg-red-50 border border-red-100 rounded-2xl text-center text-xs font-semibold text-red-500">
+                      ❌ Este torneo fue cancelado.
+                    </div>
+                  )}
+
+                  {/* Cancelar si en_curso */}
+                  {activeTorneo.estado === 'en_curso' && (
+                    <button
+                      type="button"
+                      onClick={handleCancelarTorneo}
+                      disabled={loading}
+                      className="w-full py-3 text-xs font-bold justify-center flex items-center gap-1.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl hover:bg-red-100 transition-colors"
+                    >
+                      <XCircle size={14} /> Cancelar Torneo en Curso
+                    </button>
+                  )}
+
                 </div>
               )}
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* TAB PARTIDOS ABIERTOS */}
+      {activeTab === 'partidos' && (
+        <div className="space-y-4 animate-fade-in">
+          <h2 className="text-sm font-extrabold text-slate-950 font-kanit uppercase tracking-wider pl-1">
+            🎾 Gestión de Partidos Abiertos
+          </h2>
+          {localPartidos.length === 0 ? (
+            <div className="text-center p-8 text-slate-400">
+              <Swords size={32} className="mx-auto mb-2 opacity-30" />
+              <p className="text-sm font-medium">No hay partidos abiertos activos.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {localPartidos.map(p => (
+                <div key={p.id} className="card p-4 bg-white border border-slate-100 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-800">{p.club}</h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        {p.fecha} · {p.hora}h · {p.creador?.full_name || p.creador?.email || 'Sin creador'}
+                      </p>
+                    </div>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
+                      p.estado === 'abierto' ? 'bg-green-100 text-green-700'
+                      : p.estado === 'cancelado' ? 'bg-red-100 text-red-700'
+                      : 'bg-slate-100 text-slate-600'
+                    }`}>{p.estado}</span>
+                  </div>
+                  {p.estado !== 'cancelado' && (
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => handleCancelarPartido(p.id)}
+                        disabled={loading}
+                        className="flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
+                      >
+                        <XCircle size={12} /> Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleEliminarPartido(p.id)}
+                        disabled={loading}
+                        className="flex-1 py-2 text-[10px] font-bold flex items-center justify-center gap-1 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 size={12} /> Eliminar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB NOTIFICACIONES */}
+      {activeTab === 'notificaciones' && (
+        <div className="space-y-6 animate-fade-in">
+
+          {/* Enviar Notificación */}
+          <form onSubmit={handleEnviarNotificacion} className="card p-5 bg-white space-y-4">
+            <h2 className="text-sm font-extrabold text-slate-950 font-kanit uppercase tracking-wider border-b border-slate-100 pb-3">
+              <Bell size={14} className="inline mr-1.5" />Enviar Notificación
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Destinatario</label>
+                <select
+                  value={notifDestinatario}
+                  onChange={e => setNotifDestinatario(e.target.value)}
+                  className="form-input w-full rounded-xl px-4 py-3 text-xs bg-white border border-slate-200"
+                >
+                  <option value="todos">📣 Todos los jugadores</option>
+                  {jugadores.map(j => (
+                    <option key={j.id} value={j.id}>
+                      {j.full_name || j.email.split('@')[0]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tipo</label>
+                <select
+                  value={notifTipo}
+                  onChange={e => setNotifTipo(e.target.value as any)}
+                  className="form-input w-full rounded-xl px-4 py-3 text-xs bg-white border border-slate-200"
+                >
+                  <option value="sistema">🔔 Sistema</option>
+                  <option value="partido">🎾 Partido</option>
+                  <option value="torneo">🏆 Torneo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Mensaje</label>
+                <textarea
+                  required
+                  placeholder="Escribe el mensaje de la notificación..."
+                  value={notifMensaje}
+                  onChange={e => setNotifMensaje(e.target.value)}
+                  className="input-base h-20 py-2 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Enlace (opcional)</label>
+                <input
+                  type="text"
+                  placeholder="/partidos/..."
+                  value={notifEnlace}
+                  onChange={e => setNotifEnlace(e.target.value)}
+                  className="input-base"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full py-3.5 text-xs font-bold justify-center shadow-green flex items-center gap-1.5"
+              >
+                <Send size={14} /> Enviar Notificación
+              </button>
+            </div>
+          </form>
+
+          {/* Notificaciones enviadas (pendientes de leer) */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
+              📋 Notificaciones Activas (sin leer)
+            </h3>
+            {localNotifs.length === 0 ? (
+              <div className="text-center p-6 text-slate-400">
+                <BellOff size={28} className="mx-auto mb-2 opacity-30" />
+                <p className="text-xs font-medium">No hay notificaciones sin leer.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {localNotifs.map(n => (
+                  <div key={n.id} className="card p-3.5 bg-white border border-slate-100 flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-black text-brand-600 uppercase">{n.tipo}</span>
+                        <span className="text-[9px] text-slate-400">·</span>
+                        <span className="text-[9px] text-slate-400 truncate">{n.perfil?.full_name || n.usuario_id.slice(0, 8)}</span>
+                      </div>
+                      <p className="text-xs text-slate-700 font-medium leading-snug truncate">{n.mensaje}</p>
+                    </div>
+                    <button
+                      onClick={() => handleEliminarNotif(n.id)}
+                      className="flex-shrink-0 p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                      title="Eliminar notificación"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1064,11 +1378,11 @@ export default function AdminClient({
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">
               🎾 Pistas Registradas
             </h2>
-            {pistas.length === 0 ? (
+            {localPistas.length === 0 ? (
               <p className="text-xs text-slate-500">No hay pistas registradas todavía.</p>
             ) : (
               <div className="grid gap-3">
-                {pistas.map(p => (
+                {localPistas.map(p => (
                   <div key={p.id} className="card p-3.5 bg-white flex justify-between items-center">
                     <div>
                       <h4 className="text-sm font-extrabold text-slate-800">{p.nombre}</h4>
@@ -1081,18 +1395,26 @@ export default function AdminClient({
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        setPNombre(p.nombre)
-                        setPPared(p.tipo_pared)
-                        setPTecho(p.tipo_techo)
-                        setEditingPistaId(p.id)
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
-                      className="p-2 bg-slate-50 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-slate-100"
-                    >
-                      <Settings size={14} />
-                    </button>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => {
+                          setPNombre(p.nombre)
+                          setPPared(p.tipo_pared)
+                          setPTecho(p.tipo_techo)
+                          setEditingPistaId(p.id)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
+                        className="p-2 bg-slate-50 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors border border-slate-100"
+                      >
+                        <Settings size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleEliminarPista(p.id)}
+                        className="p-2 bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-red-100"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1108,15 +1430,17 @@ export default function AdminClient({
             <h2 className="text-sm font-extrabold text-slate-800 font-kanit mb-4 flex items-center gap-2">
               <Megaphone className="text-brand-600" size={18} /> Buzón de Contacto
             </h2>
-            {incidencias.length === 0 ? (
+            {localIncidencias.length === 0 ? (
               <div className="text-center p-8 text-slate-400">
                 <Check size={32} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm font-medium">No hay mensajes pendientes.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {incidencias.map(inc => (
-                  <div key={inc.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2">
+                {localIncidencias.map(inc => (
+                  <div key={inc.id} className={`p-4 rounded-xl border space-y-2 ${
+                    inc.estado === 'resuelto' ? 'bg-green-50 border-green-100 opacity-60' : 'bg-slate-50 border-slate-100'
+                  }`}>
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <h4 className="text-sm font-extrabold text-slate-800">{inc.nombre}</h4>
@@ -1133,7 +1457,18 @@ export default function AdminClient({
                     </p>
                     <div className="flex justify-between items-center pt-2 text-[10px] text-slate-400 font-semibold">
                       <span>{new Date(inc.created_at).toLocaleDateString()}</span>
-                      <span className="uppercase tracking-widest">{inc.estado}</span>
+                      {inc.estado === 'resuelto' ? (
+                        <span className="text-green-600 font-black uppercase flex items-center gap-1">
+                          <Check size={10} /> Resuelto
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleResolverIncidencia(inc.id)}
+                          className="text-[10px] px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg font-bold hover:bg-green-100 transition-colors flex items-center gap-1"
+                        >
+                          <Check size={10} /> Marcar Resuelto
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
