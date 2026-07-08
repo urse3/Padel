@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User, BarChart3, Plus, Activity, Users, Settings, X, Calendar, Trophy, Swords } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface BottomNavProps {
   isAdmin?: boolean
@@ -12,12 +13,60 @@ interface BottomNavProps {
 export default function BottomNav({ isAdmin = false }: BottomNavProps) {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0)
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
+
+  const sb = createClient()
+
+  useEffect(() => {
+    let channel: any = null
+    const initNotifications = async () => {
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
+
+      // Fetch inicial mensajes
+      const { count: msgCount } = await sb
+        .from('mensajes_directos')
+        .select('*', { count: 'exact', head: true })
+        .eq('receptor_id', user.id)
+        .eq('leido', false)
+      setUnreadMessagesCount(msgCount || 0)
+
+      // Fetch inicial notificaciones
+      const { count: notifCount } = await sb
+        .from('notificaciones')
+        .select('*', { count: 'exact', head: true })
+        .eq('usuario_id', user.id)
+        .eq('leido', false)
+      setUnreadNotificationsCount(notifCount || 0)
+
+      // Suscribirse a cambios en tiempo real
+      channel = sb.channel('bottom_nav_notifications')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mensajes_directos', filter: `receptor_id=eq.${user.id}` }, async () => {
+          const { count } = await sb.from('mensajes_directos').select('*', { count: 'exact', head: true }).eq('receptor_id', user.id).eq('leido', false)
+          setUnreadMessagesCount(count || 0)
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notificaciones', filter: `usuario_id=eq.${user.id}` }, async () => {
+          const { count } = await sb.from('notificaciones').select('*', { count: 'exact', head: true }).eq('usuario_id', user.id).eq('leido', false)
+          setUnreadNotificationsCount(count || 0)
+        })
+        .subscribe()
+    }
+
+    initNotifications()
+
+    return () => {
+      if (channel) sb.removeChannel(channel)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const links = [
     { name: 'Perfil', path: '/dashboard', icon: User },
     { name: 'Ranking', path: '/ranking', icon: BarChart3 },
-    { name: 'Partido', path: '/partidos', icon: Activity },
-    { name: 'Amigos', path: '/amigos', icon: Users }
+    { name: 'Partido', path: '/partidos', icon: Activity, badge: unreadNotificationsCount },
+    { name: 'Amigos', path: '/amigos', icon: Users, badge: unreadMessagesCount }
   ]
 
   return (
@@ -35,11 +84,18 @@ export default function BottomNav({ isAdmin = false }: BottomNavProps) {
                 <Link
                   key={l.path}
                   href={l.path}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-1.5 transition-all ${
+                  className={`flex flex-col items-center gap-1.5 px-3 py-1.5 transition-all relative ${
                     isActive ? 'text-brand-600 font-bold scale-105' : 'text-slate-400 font-medium'
                   }`}
                 >
-                  <Icon size={20} className={isActive ? 'text-brand-600' : 'text-slate-400'} />
+                  <div className="relative">
+                    <Icon size={20} className={isActive ? 'text-brand-600' : 'text-slate-400'} />
+                    {l.badge && l.badge > 0 ? (
+                      <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-fade-in">
+                        {l.badge > 9 ? '9+' : l.badge}
+                      </span>
+                    ) : null}
+                  </div>
                   <span className="text-[10px] tracking-tight">{l.name}</span>
                 </Link>
               )
@@ -71,11 +127,18 @@ export default function BottomNav({ isAdmin = false }: BottomNavProps) {
                 <Link
                   key={l.path}
                   href={l.path}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-1.5 transition-all ${
+                  className={`flex flex-col items-center gap-1.5 px-3 py-1.5 transition-all relative ${
                     isActive ? 'text-brand-600 font-bold scale-105' : 'text-slate-400 font-medium'
                   }`}
                 >
-                  <Icon size={20} className={isActive ? 'text-brand-600' : 'text-slate-400'} />
+                  <div className="relative">
+                    <Icon size={20} className={isActive ? 'text-brand-600' : 'text-slate-400'} />
+                    {l.badge && l.badge > 0 ? (
+                      <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-fade-in">
+                        {l.badge > 9 ? '9+' : l.badge}
+                      </span>
+                    ) : null}
+                  </div>
                   <span className="text-[10px] tracking-tight">{l.name}</span>
                 </Link>
               )

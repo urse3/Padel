@@ -29,9 +29,10 @@ interface AmigosClientProps {
   relaciones: Relacion[]
   todosUsuarios: Usuario[]
   currentUserId: string
+  unreadCounts?: Record<string, number>
 }
 
-export default function AmigosClient({ relaciones, todosUsuarios, currentUserId }: AmigosClientProps) {
+export default function AmigosClient({ relaciones, todosUsuarios, currentUserId, unreadCounts = {} }: AmigosClientProps) {
   const [activeTab, setActiveTab] = useState<'mis-amigos' | 'solicitudes' | 'buscar'>('mis-amigos')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -189,8 +190,13 @@ export default function AmigosClient({ relaciones, todosUsuarios, currentUserId 
                   </div>
                   <div className="flex items-center gap-3">
                     <LevelBadge nivel={parseFloat(a.nivel as any)} size="sm" />
-                    <Link href={`/amigos/${a.id}/chat`} className="p-2 bg-slate-100 text-brand-600 rounded-xl hover:bg-brand-50 transition-colors">
+                    <Link href={`/amigos/${a.id}/chat`} className="relative p-2 bg-slate-100 text-brand-600 rounded-xl hover:bg-brand-50 transition-colors">
                       <MessageCircle size={16} />
+                      {unreadCounts[a.id] && unreadCounts[a.id] > 0 ? (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-fade-in">
+                          {unreadCounts[a.id] > 9 ? '9+' : unreadCounts[a.id]}
+                        </span>
+                      ) : null}
                     </Link>
                   </div>
                 </div>

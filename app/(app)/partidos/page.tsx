@@ -29,10 +29,19 @@ export default async function PartidosPage() {
     .order('fecha', { ascending: true })
     .order('hora', { ascending: true })
 
+  // 3. Cargar notificaciones
+  const { data: notificaciones } = await sb
+    .from('notificaciones')
+    .select('*')
+    .eq('usuario_id', user.id)
+    .eq('leido', false)
+    .order('created_at', { ascending: false })
+
   return (
     <PartidosClient 
       partidos={partidos || []} 
       currentUserId={user.id} 
+      notificaciones={notificaciones || []}
     />
   )
 }

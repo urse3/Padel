@@ -34,12 +34,23 @@ interface Partido {
   inscripciones: Inscripcion[]
 }
 
+interface Notificacion {
+  id: string
+  tipo: string
+  mensaje: string
+  enlace: string | null
+  leido: boolean
+  created_at: string
+}
+
 interface PartidosClientProps {
   partidos: Partido[]
   currentUserId: string
+  notificaciones?: Notificacion[]
 }
 
-export default function PartidosClient({ partidos, currentUserId }: PartidosClientProps) {
+export default function PartidosClient({ partidos, currentUserId, notificaciones = [] }: PartidosClientProps) {
+  const [notifs, setNotifs] = useState<Notificacion[]>(notificaciones)
   const [filterLevel, setFilterLevel] = useState<string>('todos')
   const [filterStatus, setFilterStatus] = useState<string>('todos')
 
@@ -84,6 +95,31 @@ export default function PartidosClient({ partidos, currentUserId }: PartidosClie
           <Plus size={14} className="stroke-[3]" /> Crear
         </Link>
       </div>
+
+      {/* Avisos y Notificaciones */}
+      {notifs.length > 0 && (
+        <div className="space-y-2">
+          {notifs.map(n => (
+            <div key={n.id} onClick={async () => {
+              const { createClient } = await import('@/lib/supabase/client')
+              const sb = createClient()
+              await sb.from('notificaciones').update({ leido: true }).eq('id', n.id)
+              setNotifs(prev => prev.filter(x => x.id !== n.id))
+              if (n.enlace) window.location.href = n.enlace
+            }} className="card p-4 bg-brand-50 border border-brand-100 flex items-center justify-between cursor-pointer hover:bg-brand-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{n.tipo === 'torneo' ? '🏆' : n.tipo === 'partido' ? '🎾' : '🔔'}</span>
+                <div>
+                  <h4 className="text-xs font-bold text-brand-900">{n.mensaje}</h4>
+                  <span className="text-[9px] font-semibold text-brand-600 mt-0.5 inline-block">
+                    {new Date(n.created_at).toLocaleDateString()} • Toca para {n.enlace ? 'ver' : 'descartar'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Módulo de Filtros */}
       <div className="card p-4 bg-white flex flex-col gap-3">

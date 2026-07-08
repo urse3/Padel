@@ -31,11 +31,30 @@ export default async function AmigosPage() {
     .neq('id', user.id)
     .order('full_name', { ascending: true })
 
+  // 4. Obtener mensajes no leídos agrupados por emisor
+  let unreadCounts: Record<string, number> = {}
+  try {
+    const { data: unreadData } = await sb
+      .from('mensajes_directos')
+      .select('emisor_id')
+      .eq('receptor_id', user.id)
+      .eq('leido', false)
+    
+    if (unreadData) {
+      unreadData.forEach(msg => {
+        unreadCounts[msg.emisor_id] = (unreadCounts[msg.emisor_id] || 0) + 1
+      })
+    }
+  } catch (e) {
+    // Si la tabla no existe o error, ignorar
+  }
+
   return (
     <AmigosClient
       relaciones={relaciones || []}
       todosUsuarios={todosUsuarios || []}
       currentUserId={user.id}
+      unreadCounts={unreadCounts}
     />
   )
 }
