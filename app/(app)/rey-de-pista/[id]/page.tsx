@@ -57,11 +57,11 @@ export default async function DetalleReyPage({ params }: PageProps) {
     .from('amigos')
     .select(`
       estado,
-      user1:usuario1_id(id, full_name, email, avatar_url, nivel),
-      user2:usuario2_id(id, full_name, email, avatar_url, nivel)
+      user1:solicitante_id(id, full_name, email, avatar_url, nivel),
+      user2:receptor_id(id, full_name, email, avatar_url, nivel)
     `)
     .eq('estado', 'aceptado')
-    .or(`usuario1_id.eq.${user.id},usuario2_id.eq.${user.id}`)
+    .or(`solicitante_id.eq.${user.id},receptor_id.eq.${user.id}`)
 
   let amigos: any[] = []
   if (rels) {
