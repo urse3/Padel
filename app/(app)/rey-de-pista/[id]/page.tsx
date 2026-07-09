@@ -5,7 +5,12 @@ import DetalleReyClient from '@/components/app/DetalleReyClient'
 
 export const revalidate = 0 // Sin caché
 
-export default async function DetalleReyPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function DetalleReyPage({ params }: PageProps) {
+  const { id } = await params
   const sb = await createClient()
 
   // 1. Obtener usuario de la sesión
@@ -24,7 +29,7 @@ export default async function DetalleReyPage({ params }: { params: { id: string 
       *,
       creador:creador_id(id, full_name, email, avatar_url, nivel)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (reyError || !rey) {
@@ -32,7 +37,7 @@ export default async function DetalleReyPage({ params }: { params: { id: string 
       <div className="p-10 text-center">
         <h1 className="text-2xl font-bold text-red-500 mb-4">Error cargando el Rey de Pista</h1>
         <p className="text-slate-700">{reyError ? JSON.stringify(reyError) : 'No se encontró el registro'}</p>
-        <p className="text-slate-500 mt-4 text-sm">ID buscado: {params.id}</p>
+        <p className="text-slate-500 mt-4 text-sm">ID buscado: {id}</p>
       </div>
     )
   }
@@ -44,7 +49,7 @@ export default async function DetalleReyPage({ params }: { params: { id: string 
       *,
       jugador:jugador_id(id, full_name, email, avatar_url, nivel)
     `)
-    .eq('rey_id', params.id)
+    .eq('rey_id', id)
     .order('posicion', { ascending: true })
 
   // 4. Obtener amigos (para invitar)
