@@ -32,6 +32,7 @@ interface Partido {
   estado: 'abierto' | 'completo' | 'cancelado' | 'finalizado'
   creador: { id: string; full_name: string | null; email: string; avatar_url: string | null }
   inscripciones: Inscripcion[]
+  tipo?: 'partido' | 'rey_pista'
 }
 
 interface Notificacion {
@@ -202,7 +203,9 @@ export default function PartidosClient({ partidos, currentUserId, notificaciones
                           className="border border-slate-100"
                         />
                         <div className="min-w-0">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Organiza</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${p.tipo === 'rey_pista' ? 'text-purple-500' : 'text-slate-400'}`}>
+                            {p.tipo === 'rey_pista' ? '👑 Rey de Pista' : 'Organiza'}
+                          </p>
                           <p className="text-xs font-bold text-slate-800 truncate">
                             {p.creador?.full_name || p.creador?.email.split('@')[0]}
                           </p>
@@ -271,10 +274,14 @@ export default function PartidosClient({ partidos, currentUserId, notificaciones
                     </div>
 
                     <Link
-                      href={`/partidos/${p.id}`}
-                      className="btn-secondary py-1.5 px-3 text-xs font-bold"
+                      href={p.tipo === 'rey_pista' ? `/rey-de-pista/${p.id}` : `/partidos/${p.id}`}
+                      className={`py-1.5 px-3 text-xs font-bold rounded-xl flex items-center justify-center transition-colors ${
+                        p.tipo === 'rey_pista' 
+                          ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' 
+                          : 'btn-secondary'
+                      }`}
                     >
-                      Ver detalles
+                      Ver {p.tipo === 'rey_pista' ? 'Rey de Pista' : 'detalles'}
                     </Link>
                   </div>
                 </div>

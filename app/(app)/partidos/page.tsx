@@ -26,8 +26,27 @@ export default async function PartidosPage() {
         jugador:jugador_id(id, full_name, email, avatar_url, nivel)
       )
     `)
-    .order('fecha', { ascending: true })
-    .order('hora', { ascending: true })
+
+  // 3. Cargar rey de pista
+  const { data: reyes } = await sb
+    .from('rey_de_pista')
+    .select(`
+      *,
+      creador:creador_id(id, full_name, email, avatar_url),
+      inscripciones:rey_inscripciones(
+        id,
+        jugador:jugador_id(id, full_name, email, avatar_url, nivel)
+      )
+    `)
+
+  const combinados = [
+    ...(partidos || []).map(p => ({ ...p, tipo: 'partido' })),
+    ...(reyes || []).map(r => ({ ...r, tipo: 'rey_pista' }))
+  ].sort((a, b) => {
+    const timeA = new Date(`${a.fecha}T${a.hora}`).getTime()
+    const timeB = new Date(`${b.fecha}T${b.hora}`).getTime()
+    return timeA - timeB
+  })
 
   // 3. Cargar notificaciones
   const { data: notificaciones } = await sb
@@ -39,7 +58,7 @@ export default async function PartidosPage() {
 
   return (
     <PartidosClient 
-      partidos={partidos || []} 
+      partidos={combinados} 
       currentUserId={user.id} 
       notificaciones={notificaciones || []}
     />

@@ -37,7 +37,9 @@ function getKFactor(nivel: number): number {
 export function calcularElo(
   nivelGanador: number,
   nivelPerdedor: number,
-  multiplicador: number = 1.0
+  multiplicador: number = 1.0,
+  setsGanador: number = 2,
+  setsPerdedor: number = 0
 ): { deltaGanador: number; deltaPerdedor: number } {
   const nivelGanPromedio = nivelGanador
   const nivelPerPromedio = nivelPerdedor
@@ -45,9 +47,17 @@ export function calcularElo(
   const K = getKFactor(nivelGanPromedio)
   const expected = 1.0 / (1.0 + Math.pow(10, (nivelPerPromedio - nivelGanPromedio) / 4))
   
-  let delta = K * (1 - expected) * multiplicador
-  // Permitimos deltas mínimos más pequeños en niveles altos, y forzamos siempre 2 decimales
+  // Factor de contundencia por diferencia de sets
+  const diferenciaSets = Math.abs(setsGanador - setsPerdedor)
+  let factorContundencia = 1.0
+  if (diferenciaSets >= 2) factorContundencia = 1.2
+  else if (diferenciaSets === 1) factorContundencia = 0.8
+  
+  let delta = K * (1 - expected) * multiplicador * factorContundencia
   delta = Math.round(delta * 100) / 100
+
+  // Garantizar un mínimo de 0.01 al ganador
+  if (delta < 0.01) delta = 0.01
 
   return {
     deltaGanador: delta,

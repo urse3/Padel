@@ -245,7 +245,7 @@ export default function DashboardClient({ user, profile: initialProfile, partido
                   </p>
                 </div>
                 <Link
-                  href={act.tipo === 'partido' ? `/comunidad/partidos/${act.id}` : `/comunidad/rey-de-pista/${act.id}`}
+                  href={act.tipo === 'partido' ? `/partidos/${act.id}` : `/rey-de-pista/${act.id}`}
                   className="flex-shrink-0 p-2 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-colors"
                 >
                   <ArrowRight size={14} />

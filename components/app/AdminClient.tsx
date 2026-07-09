@@ -263,11 +263,12 @@ export default function AdminClient({
 
   // Iniciar Torneo y generar Brackets
   const handleIniciarTorneo = async () => {
-    if (!activeTorneoId) return
+    if (!activeTorneoId || !activeTorneo) return
     
-    // Necesitamos tener exactamente 8 parejas para iniciar (cuartos de final)
-    if (parejasDelTorneo.length !== 8) {
-      alert(`Se necesitan exactamente 8 parejas confirmadas para generar la ronda de cuartos de final. Actualmente hay ${parejasDelTorneo.length} inscritas.`)
+    const maxParejas = activeTorneo.max_parejas || 8
+    
+    if (parejasDelTorneo.length !== maxParejas) {
+      alert(`Se necesitan exactamente ${maxParejas} parejas confirmadas para generar la ronda inicial. Actualmente hay ${parejasDelTorneo.length} inscritas.`)
       return
     }
 
@@ -281,45 +282,46 @@ export default function AdminClient({
 
       if (errTorneo) throw errTorneo
 
-      // 2. Generar partidos de cuartos (Ronda 1, 4 partidos)
-      // Emparejamos pareja 1 contra pareja 2, 3 contra 4, etc.
-      const partidosInsert = [
-        { torneo_id: activeTorneoId, ronda: 1, posicion: 1, pareja1_id: parejasDelTorneo[0].id, pareja2_id: parejasDelTorneo[1].id, estado: 'pendiente' },
-        { torneo_id: activeTorneoId, ronda: 1, posicion: 2, pareja1_id: parejasDelTorneo[2].id, pareja2_id: parejasDelTorneo[3].id, estado: 'pendiente' },
-        { torneo_id: activeTorneoId, ronda: 1, posicion: 3, pareja1_id: parejasDelTorneo[4].id, pareja2_id: parejasDelTorneo[5].id, estado: 'pendiente' },
-        { torneo_id: activeTorneoId, ronda: 1, posicion: 4, pareja1_id: parejasDelTorneo[6].id, pareja2_id: parejasDelTorneo[7].id, estado: 'pendiente' }
-      ]
+      // 2. Generar partidos dinámicamente
+      const rondasTotales = Math.log2(maxParejas)
+      const todosLosPartidos = []
+      
+      for (let ronda = 1; ronda <= rondasTotales; ronda++) {
+        const partidosEnRonda = maxParejas / Math.pow(2, ronda)
+        for (let posicion = 1; posicion <= partidosEnRonda; posicion++) {
+          if (ronda === 1) {
+            // Ronda inicial: asignamos parejas
+            const p1Index = (posicion - 1) * 2
+            const p2Index = p1Index + 1
+            todosLosPartidos.push({
+              torneo_id: activeTorneoId,
+              ronda,
+              posicion,
+              pareja1_id: parejasDelTorneo[p1Index].id,
+              pareja2_id: parejasDelTorneo[p2Index].id,
+              estado: 'pendiente'
+            })
+          } else {
+            // Rondas posteriores: vacías
+            todosLosPartidos.push({
+              torneo_id: activeTorneoId,
+              ronda,
+              posicion,
+              pareja1_id: null,
+              pareja2_id: null,
+              estado: 'pendiente'
+            })
+          }
+        }
+      }
 
-      const { error: errPartidos1 } = await sb
+      const { error: errPartidos } = await sb
         .from('partidos_torneo')
-        .insert(partidosInsert)
+        .insert(todosLosPartidos)
 
-      if (errPartidos1) throw errPartidos1
+      if (errPartidos) throw errPartidos
 
-      // 3. Generar semifinales vacías (Ronda 2, 2 partidos)
-      const semisInsert = [
-        { torneo_id: activeTorneoId, ronda: 2, posicion: 1, pareja1_id: null, pareja2_id: null, estado: 'pendiente' },
-        { torneo_id: activeTorneoId, ronda: 2, posicion: 2, pareja1_id: null, pareja2_id: null, estado: 'pendiente' }
-      ]
-
-      const { error: errPartidos2 } = await sb
-        .from('partidos_torneo')
-        .insert(semisInsert)
-
-      if (errPartidos2) throw errPartidos2
-
-      // 4. Generar final vacía (Ronda 3, 1 partido)
-      const finalInsert = [
-        { torneo_id: activeTorneoId, ronda: 3, posicion: 1, pareja1_id: null, pareja2_id: null, estado: 'pendiente' }
-      ]
-
-      const { error: errPartidos3 } = await sb
-        .from('partidos_torneo')
-        .insert(finalInsert)
-
-      if (errPartidos3) throw errPartidos3
-
-      alert('⚡ ¡Torneo Iniciado y Brackets de Cuartos de Final generados!')
+      alert('⚡ ¡Torneo Iniciado y Brackets generados!')
       router.refresh()
     } catch (err: any) {
       alert(`Error al iniciar torneo: ${err.message}`)
@@ -370,7 +372,11 @@ export default function AdminClient({
       if (errPartido) throw errPartido
 
       // 2. Avanzar al ganador en la siguiente ronda
-      if (p.ronda < 3) {
+      if (!activeTorneo) return
+      const maxParejas = activeTorneo.max_parejas || 8
+      const rondasTotales = Math.log2(maxParejas)
+
+      if (p.ronda < rondasTotales) {
         const siguienteRonda = p.ronda + 1
         const siguientePosicion = Math.ceil(p.posicion / 2)
         const esPrimerSlot = p.posicion % 2 !== 0 // Posición impar va a pareja1, par a pareja2
@@ -396,7 +402,7 @@ export default function AdminClient({
           if (errAvance) throw errAvance
         }
       } else {
-        // Es la final (ronda 3). Cerrar torneo como finalizado
+        // Es la final (ronda === rondasTotales). Cerrar torneo como finalizado
         const { error: errCierre } = await sb
           .from('torneos')
           .update({ estado: 'finalizado' })
@@ -900,6 +906,21 @@ export default function AdminClient({
                     className="input-base py-2 text-xs"
                   />
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Participantes
+                  </label>
+                  <select
+                    value={tMaxParejas}
+                    onChange={e => setTMaxParejas(e.target.value)}
+                    className="form-input w-full rounded-xl px-3 py-2 text-xs bg-white border border-slate-200"
+                  >
+                    <option value="4">8 Jugadores (4 parejas)</option>
+                    <option value="8">16 Jugadores (8 parejas)</option>
+                    <option value="16">32 Jugadores (16 parejas)</option>
+                    <option value="32">64 Jugadores (32 parejas)</option>
+                  </select>
+                </div>
               </div>
 
               <button
@@ -999,14 +1020,21 @@ export default function AdminClient({
                             ? `${p.pareja2.j1.full_name.split(' ')[0]} / ${p.pareja2.j2.full_name.split(' ')[0]}`
                             : 'Por determinar'
                           
-                          const rounds = ['Cuartos', 'Semifinal', 'Final']
+                          const rondasTotales = Math.log2(activeTorneo.max_parejas || 8)
+                          let roundName = `Ronda ${p.ronda}`
+                          if (p.ronda === rondasTotales) roundName = 'Final'
+                          else if (p.ronda === rondasTotales - 1) roundName = 'Semifinal'
+                          else if (p.ronda === rondasTotales - 2) roundName = 'Cuartos'
+                          else if (p.ronda === rondasTotales - 3) roundName = 'Octavos'
+                          else if (p.ronda === rondasTotales - 4) roundName = 'Dieciseisavos'
+
                           const isWinnerP1 = p.ganador_id && p.ganador_id === p.pareja1_id
                           const isWinnerP2 = p.ganador_id && p.ganador_id === p.pareja2_id
 
                           return (
                             <div key={p.id} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col justify-between gap-3 text-[10px] font-bold text-slate-600">
                               <div className="flex justify-between items-center text-[8px] font-black text-slate-400 uppercase tracking-wider">
-                                <span>{rounds[p.ronda - 1]} - Pos: {p.posicion}</span>
+                                <span>{roundName} - Pos: {p.posicion}</span>
                                 <span className={p.estado === 'jugado' ? 'text-slate-500' : 'text-amber-500'}>
                                   {p.estado === 'jugado' ? 'Jugado' : 'Pendiente'}
                                 </span>

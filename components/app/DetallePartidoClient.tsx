@@ -85,9 +85,11 @@ export default function DetallePartidoClient({
 
   // Estados para el registro de resultados (Modal)
   const [showResultModal, setShowResultModal] = useState(false)
+  const [parejaGanadora, setParejaGanadora] = useState<'ganadores' | 'perdedores'>('ganadores')
   const [setsGanadores, setSetsGanadores] = useState('')
   const [setsPerdedores, setSetsPerdedores] = useState('')
-  const [parejaGanadora, setParejaGanadora] = useState<'ganadores' | 'perdedores'>('ganadores')
+  const [globalSetsGanador, setGlobalSetsGanador] = useState(2)
+  const [globalSetsPerdedor, setGlobalSetsPerdedor] = useState(0)
 
   // Estados para invitar amigos
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -328,8 +330,13 @@ export default function DetallePartidoClient({
       const nivelPerPromedio = (perdedores[0].nivel + perdedores[1].nivel) / 2
 
       // Aplicar cálculo de Elo Playtomic
-      const { deltaGanador } = calcularElo(nivelGanPromedio, nivelPerPromedio, 1.0) // Multiplicador 1.0 para partidos normales
-
+      const { deltaGanador } = calcularElo(
+        nivelGanPromedio,
+        nivelPerPromedio,
+        1.0, // Multiplicador normal
+        globalSetsGanador,
+        globalSetsPerdedor
+      )
       // Guardar el partido en la tabla 'partidos' (historial oficial)
       const { error: errPartidoHistorial } = await sb
         .from('partidos')
@@ -836,6 +843,26 @@ export default function DetallePartidoClient({
                     className="input-base"
                   />
                 </div>
+                
+                <div className="space-y-1.5 col-span-2">
+                  <label className="block text-[10px] text-slate-500 mb-1 font-bold uppercase">Resultado Global (para el ranking Elo)</label>
+                  <select
+                    value={`${globalSetsGanador}-${globalSetsPerdedor}`}
+                    onChange={e => {
+                      const [g, p] = e.target.value.split('-')
+                      setGlobalSetsGanador(parseInt(g))
+                      setGlobalSetsPerdedor(parseInt(p))
+                    }}
+                    className="form-input w-full rounded-xl px-3 py-2 text-xs bg-white border border-slate-200"
+                  >
+                    <option value="2-0">Victoria 2-0 (Mejor de 3)</option>
+                    <option value="2-1">Victoria 2-1 (Mejor de 3)</option>
+                    <option value="3-0">Victoria 3-0 (Mejor de 5)</option>
+                    <option value="3-1">Victoria 3-1 (Mejor de 5)</option>
+                    <option value="3-2">Victoria 3-2 (Mejor de 5)</option>
+                  </select>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="block text-[10px] text-slate-500 mb-1">Sets Perdedor (ej: 3-6, 7-6, 8-10)</label>
                   <input
