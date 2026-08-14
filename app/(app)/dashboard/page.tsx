@@ -2,7 +2,7 @@ import React from 'react'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/app/DashboardClient'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import AutoEnrollClient from './AutoEnrollClient'
 
 export default async function DashboardPage() {
   const sb = await createClient()
@@ -21,19 +21,7 @@ export default async function DashboardPage() {
   const pendingInviteId = cookieStore.get('pending_invite_partido_id')?.value
 
   if (pendingInviteId) {
-    try {
-      await sb
-        .from('inscripciones')
-        .insert({
-          partido_id: pendingInviteId,
-          jugador_id: user.id
-        })
-    } catch (e) {
-      console.error('Error auto-enrolling player:', e)
-    } finally {
-      cookieStore.set('pending_invite_partido_id', '', { maxAge: 0, path: '/' })
-      redirect(`/comunidad/partidos/${pendingInviteId}`)
-    }
+    return <AutoEnrollClient inviteId={pendingInviteId} />
   }
 
   // 3. Fetch en paralelo: perfil + historial + agenda (todo en servidor, una sola round-trip)
