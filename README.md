@@ -5,8 +5,11 @@ Plataforma web para comunidades de pádel: registra partidos con tus amigos, sub
 **Demo:** https://appweb-padel.vercel.app
 
 <div align="center">
-  <img src="public/docs/dashboard.jpg" width="48%" alt="Punto de Padel Dashboard" />
-  <img src="public/docs/matches.jpg" width="48%" alt="Punto de Padel Mobile App" />
+  <img src="public/docs/landing.png" width="100%" alt="Landing page - Punto de Padel" />
+  <br/><br/>
+  <img src="public/docs/partidos.png" width="70%" alt="Partidos y Rey de Pista" />
+  &nbsp;
+  <img src="public/docs/mobile.png" width="22%" alt="Vista móvil" />
 </div>
 
 ## ✨ Funcionalidades
