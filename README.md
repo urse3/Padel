@@ -2,6 +2,11 @@
 
 **Punto de Padel** es una plataforma web integral diseñada para comunidades y clubes de pádel. Permite a los jugadores gestionar su nivel mediante un algoritmo ELO dinámico, encontrar contrincantes, organizar partidos ("Partidos Abiertos" y "Rey de Pista"), inscribirse en torneos y seguir el ranking de su club.
 
+<div align="center">
+  <img src="public/docs/dashboard.jpg" width="48%" alt="Punto de Padel Dashboard" />
+  <img src="public/docs/matches.jpg" width="48%" alt="Punto de Padel Mobile App" />
+</div>
+
 ## ✨ Características Principales
 
 - **📈 Sistema de Ranking ELO**: Los jugadores ganan o pierden puntos dependiendo de sus victorias/derrotas y la diferencia de nivel con sus oponentes.
