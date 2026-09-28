@@ -3,11 +3,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "crons": [
-    {
-      "path": "/api/keepalive",
-      "schedule": "0 0 */3 * *"
-    }
-  ]
+  "installCommand": "npm install"
 }
